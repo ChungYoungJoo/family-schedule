@@ -8,6 +8,7 @@ import {
 import { $, render, openSheet, closeSheet, toast } from './ui.js';
 import { run, refresh, setReopen, reopenFn } from './sync.js';
 import { sheetEditDay, sheetRoutine, saveRoutine, sheetTask, saveTask, sheetReward, saveReward } from './sheets.js';
+import { downloadTemplate, sheetImportFile, commitImport, sheetImportPdf, commitPdf } from './import.js';
 
 /* 하루 전부 완료 보너스 — 서버가 실제 완료 여부를 다시 검증합니다 */
 async function maybeBonus(childId, date){
@@ -69,16 +70,56 @@ export const ACT = {
   /* ---- 어른 일정 ---- */
   status: ({v,d}) => {
     const m = M(v);
-    const list = m.kind === 'helper' ? SITTER_TYPES : STATUS_TYPES;
-    const cur  = statusOf(v,d);
-    const wk   = D.weekly[v+'|'+wdOf(d)] || '';
-    openSheet(`${mdLabel(d)} ${WD[wdOf(d)]}요일 · ${m.name}`,
-      '이 날짜에만 적용됩니다. 아래에서 요일 기본값도 바꿀 수 있어요.',
-      `<div class="opt-grid">${list.map(t => `<div class="opt ${t===cur?'sel':''}"
+    const cur = statusOf(v,d);
+    const wk  = D.weekly[v+'|'+wdOf(d)] || '';
+    const title = `${mdLabel(d)} ${WD[wdOf(d)]}요일 · ${m.name}`;
+
+    // 시터 선생님은 근무 시간을 직접 입력합니다 (매일 달라서)
+    if(m.kind === 'helper'){
+      const t = /(\d{2}:\d{2})\s*~\s*(\d{2}:\d{2})/.exec(cur);
+      const s0 = t ? t[1] : '12:00', e0 = t ? t[2] : '18:00';
+      return openSheet(title, '근무 시간을 직접 정할 수 있어요. 이 날짜에만 적용됩니다.', `
+        <div class="row2">
+          <div><label>출근</label><input id="sitS" type="time" value="${s0}"></div>
+          <div><label>퇴근</label><input id="sitE" type="time" value="${e0}"></div>
+        </div>
+        <button class="btn" style="margin-top:14px" data-act="savesitter" data-v="${v}" data-d="${d}" data-w="day"
+          >이 날짜에 적용</button>
+        <button class="ghost" data-act="savesitter" data-v="${v}" data-d="${d}" data-w="week"
+          >매주 ${WD[wdOf(d)]}요일 기본값으로 저장</button>
+        <h4>빠른 설정</h4>
+        <div class="opt-grid">
+          <div class="opt ${cur==='휴무'?'sel':''}" data-act="setstatus" data-v="${v}" data-d="${d}" data-w="휴무">휴무</div>
+          ${SITTER_TYPES.filter(x => x !== '휴무').map(x => `<div class="opt ${x===cur?'sel':''}"
+            data-act="setstatus" data-v="${v}" data-d="${d}" data-w="${esc(x)}">${esc(x.replace('근무 ',''))}</div>`).join('')}
+        </div>
+        <div class="note" style="text-align:left">현재 요일 기본값: ${esc(wk || '없음')}</div>`);
+    }
+
+    openSheet(title, '이 날짜에만 적용됩니다. 아래에서 요일 기본값도 바꿀 수 있어요.',
+      `<div class="opt-grid">${STATUS_TYPES.map(t => `<div class="opt ${t===cur?'sel':''}"
           data-act="setstatus" data-v="${v}" data-d="${d}" data-w="${esc(t)}">${esc(t)}</div>`).join('')}</div>
        <h4>매주 ${WD[wdOf(d)]}요일 기본값으로 저장</h4>
-       <div class="opt-grid">${list.map(t => `<div class="opt ${t===wk?'sel':''}"
+       <div class="opt-grid">${STATUS_TYPES.map(t => `<div class="opt ${t===wk?'sel':''}"
           data-act="setweekly" data-v="${v}" data-d="${d}" data-w="${esc(t)}">${esc(t)}</div>`).join('')}</div>`);
+  },
+
+  /* 시터 근무시간 직접 입력 저장 (w='day' | 'week') */
+  savesitter: ({v,d,w}) => {
+    const s = $('sitS').value, e = $('sitE').value;
+    if(!s || !e) return toast('시간을 입력해 주세요', true);
+    if(e <= s)   return toast('퇴근 시간이 출근보다 빨라요', true);
+    const status = `근무 ${s}~${e}`;
+    const m = M(v);
+    run(async () => {
+      const r = w === 'week'
+        ? await sb.from('weekly_status').upsert(
+            { family_id:m.family_id, member_id:v, weekday:wdOf(d), status }, { onConflict:'member_id,weekday' })
+        : await sb.from('day_status').upsert(
+            { family_id:m.family_id, member_id:v, on_date:d, status }, { onConflict:'member_id,on_date' });
+      closeSheet(); setReopen(null);
+      return r;
+    }, w === 'week' ? `매주 ${WD[wdOf(d)]}요일 ${status}` : `${mdLabel(d)} ${status}`);
   },
   setstatus: ({v,d,w}) => run(async () => {
     const m = M(v);
@@ -173,23 +214,45 @@ export const ACT = {
   newroutine:  ({v}) => sheetRoutine(null, v),
   editroutine: ({v}) => sheetRoutine(D.routines.find(x => x.id === v)),
   saveroutine: () => saveRoutine(),
-  delroutine:  ({v}) => run(async () => {
-    const r = await sb.from('routines').delete().eq('id',v);
-    closeSheet(); setReopen(null); return r; }, '삭제했어요'),
+  delroutine:  ({v,w}) => {
+    const name = w || D.routines.find(x => x.id === v)?.title || '이 일정';
+    if(!confirm(`'${name}' 일정을 삭제할까요?\n이 요일 시간표에서 완전히 사라집니다.`)) return;
+    run(async () => {
+      const r = await sb.from('routines').delete().eq('id',v);
+      closeSheet(); setReopen(null); return r; }, '삭제했어요');
+  },
 
   newtask:  ({v}) => sheetTask(null, v),
   edittask: ({v}) => sheetTask(D.tasks.find(x => x.id === v)),
   savetask: () => saveTask(),
-  deltask:  ({v}) => run(async () => {
-    const r = await sb.from('tasks').delete().eq('id',v);
-    closeSheet(); setReopen(null); return r; }, '삭제했어요'),
+  deltask:  ({v,w}) => {
+    const name = w || D.tasks.find(x => x.id === v)?.title || '이 숙제';
+    if(!confirm(`'${name}' 숙제를 삭제할까요?\n지금까지의 완료 기록도 함께 사라집니다.`)) return;
+    run(async () => {
+      const r = await sb.from('tasks').delete().eq('id',v);
+      closeSheet(); setReopen(null); return r; }, '삭제했어요');
+  },
 
   newreward:  () => sheetReward(null),
   editreward: ({v}) => sheetReward(D.rewards.find(x => x.id === v)),
   savereward: () => saveReward(),
-  delreward:  ({v}) => run(async () => {
-    const r = await sb.from('rewards').update({archived:true}).eq('id',v);
-    closeSheet(); setReopen(null); return r; }, '삭제했어요'),
+  delreward:  ({v,w}) => {
+    const name = w || D.rewards.find(x => x.id === v)?.title || '이 보상';
+    if(!confirm(`'${name}' 보상을 목록에서 뺄까요?\n이미 교환한 기록은 그대로 남습니다.`)) return;
+    run(async () => {
+      const r = await sb.from('rewards').update({archived:true}).eq('id',v);
+      closeSheet(); setReopen(null); return r; }, '삭제했어요');
+  },
+
+  delmember: ({v,w}) => {
+    const m = M(v);
+    const name = w || m?.name || '이 구성원';
+    const extra = m?.kind === 'child'
+      ? '\n\n⚠️ 이 아이의 스케줄·숙제·포인트 기록이 모두 사라집니다. 되돌릴 수 없습니다.'
+      : '\n\n이 사람이 담당으로 지정된 일정은 담당 미정이 됩니다.';
+    if(!confirm(`'${name}' 을(를) 삭제할까요?${extra}`)) return;
+    run(() => sb.from('members').delete().eq('id',v), '삭제했어요');
+  },
 
   editpoints: () => {
     const f = D.family;
@@ -205,6 +268,13 @@ export const ACT = {
     }).eq('id', D.family.id);
     closeSheet(); setReopen(null); return r;
   }, '저장했어요'),
+
+  /* ---- 파일로 한 번에 등록 ---- */
+  imptemplate: () => downloadTemplate(),
+  impfile:     () => sheetImportFile(),
+  impcommit:   () => commitImport(),
+  imppdf:      () => sheetImportPdf(),
+  pdfcommit:   () => commitPdf(),
 
   /* ---- 아이 전용 링크 ---- */
   kidlink: ({v}) => {
