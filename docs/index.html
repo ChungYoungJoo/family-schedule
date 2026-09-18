@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
+<meta name="theme-color" content="#eef0f6">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="우리집 하루">
+<title>우리집 하루</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏠</text></svg>">
+<link rel="apple-touch-icon" href="icon.svg">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div id="root">
+    <div class="center"><div class="spin"></div></div>
+  </div>
+
+  <div class="sheet-wrap" id="sheetWrap">
+    <div class="sheet-bg" data-close="1"></div>
+    <div class="sheet">
+      <h3 id="shTitle"></h3>
+      <p class="hint" id="shHint"></p>
+      <div id="shBody"></div>
+    </div>
+  </div>
+  <div class="toast" id="toast"></div>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>
