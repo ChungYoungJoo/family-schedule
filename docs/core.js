@@ -59,7 +59,8 @@ export const D = {                 // 서버에서 읽어온 데이터
   family:null, members:[], sets:[], periods:[], routines:[], tasks:[],
   notes:{}, cancels:new Set(), extras:[], pickups:{},
   weekly:{}, dayst:{}, taskLogs:new Set(), attLogs:new Set(),
-  balances:{}, weekEarned:{}, rewards:[], redemptions:[], notis:[],
+  balances:{}, weekEarned:{}, bonusDates:{},   // bonusDates[childId] = Set('YYYY-MM-DD')
+  rewards:[], redemptions:[], notis:[],
 };
 
 export const S = {                 // 화면 상태
@@ -67,7 +68,8 @@ export const S = {                 // 화면 상태
   editSet:null, ovrChild:null, weekOffset:0, syncing:false,
 };
 
-export const TODAY = ymd(new Date());
+export const TODAY    = ymd(new Date());
+export const TOMORROW = ymd(addDays(new Date(), 1));
 export const weekStart = () => {
   const d = new Date();
   d.setDate(d.getDate() - ((d.getDay()+6)%7) + S.weekOffset*7);
@@ -131,6 +133,10 @@ export const tasksOn = (cid,date) => {
     .sort((a,b) => a.sort_order - b.sort_order);
 };
 
+// 숙제와 준비물을 나눠 보고 싶을 때
+export const homeworkOn = (cid,date) => tasksOn(cid,date).filter(t => (t.kind||'homework') === 'homework');
+export const suppliesOn = (cid,date) => tasksOn(cid,date).filter(t => t.kind === 'supply');
+
 export const taskDone  = (t,date)  => D.taskLogs.has(t.id+'|'+date);
 export const attDone   = (it,date) => D.attLogs.has(pkey(it,date));
 export const checkable = it => it.category !== 'school' && it.category !== 'etc';
@@ -148,3 +154,43 @@ export function statusOf(mid, date){
 
 export const noteOn         = date => D.notes[date] || null;
 export const pendingRedeems = () => D.redemptions.filter(r => r.status === 'pending');
+
+/* ---------------- 연속 달성 ---------------- */
+// 그날 할 일이 하나라도 있었는지 (지난 날짜는 취소·추가 예외를 빼고 대략만 계산)
+function dueCount(cid, date){
+  const sid = setIdFor(date), wd = wdOf(date);
+  const t = D.tasks.filter(x => x.set_id===sid && x.child_id===cid && !x.archived
+    && (x.weekdays === null || (x.weekdays||[]).includes(wd))).length;
+  const r = D.routines.filter(x => x.set_id===sid && x.child_id===cid && x.weekday===wd
+    && checkable(x)).length;
+  return t + r;
+}
+
+const gotBonus = (cid, date) => !!D.bonusDates[cid]?.has(date);
+
+/** 오늘(또는 어제)부터 거슬러 올라가며 "다 한 날"이 며칠 이어졌는지.
+ *  할 일이 없던 날(주말 등)은 끊지 않고 건너뜁니다. */
+export function streakOf(cid){
+  let d = parseYmd(TODAY);
+  // 오늘은 아직 진행 중일 수 있으니, 아직 못 받았으면 어제부터 셉니다
+  if(!gotBonus(cid, TODAY)) d = addDays(d, -1);
+  let n = 0;
+  for(let i = 0; i < 90; i++){
+    const key = ymd(d);
+    if(dueCount(cid, key) === 0){ d = addDays(d, -1); continue; }  // 할 일 없던 날은 통과
+    if(!gotBonus(cid, key)) break;
+    n++;
+    d = addDays(d, -1);
+  }
+  return n;
+}
+
+/** 이번 주 월~일 도장판 */
+export function weekStamps(cid){
+  return weekDays().map(date => ({
+    date,
+    due:  dueCount(cid, date) > 0,
+    done: gotBonus(cid, date),
+    future: date > TODAY,
+  }));
+}
