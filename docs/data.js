@@ -1,12 +1,16 @@
 // =====================================================================
 //  data.js — 서버에서 한 번에 읽어오기
 // =====================================================================
-import { sb, D, S, isKid, kids, weekDays, setIdFor, TODAY } from './core.js';
+import { sb, D, S, isKid, kids, weekDays, setIdFor, TODAY, TOMORROW, ymd, parseYmd, addDays } from './core.js';
 
 export async function loadAll(){
   const days = weekDays();
-  const from = days[0], to = days[6];
+  // 다른 주를 보고 있어도 "오늘/내일" 카드가 그려져야 하므로 항상 포함시킵니다
+  const from = [days[0], TODAY].sort()[0];
+  const to   = [days[6], TOMORROW].sort().pop();
   const inWin = q => q.gte('on_date', from).lte('on_date', to);
+  // 연속 달성 계산용 (최근 90일 보너스 기록)
+  const ledgerFrom = ymd(addDays(parseYmd(TODAY), -95));
 
   // 아이 클라이언트에는 access_token / user_id 컬럼 권한이 없으므로 컬럼을 명시합니다.
   const memberCols = isKid()
@@ -32,7 +36,7 @@ export async function loadAll(){
     sb.from('rewards').select('*').eq('archived', false).order('sort_order'),
     sb.from('redemptions').select('*').order('requested_at', {ascending:false}).limit(40),
     sb.from('notifications').select('*').order('created_at', {ascending:false}).limit(40),
-    sb.from('point_ledger').select('child_id,delta,on_date').gte('on_date', from),
+    sb.from('point_ledger').select('child_id,delta,on_date,ref_type').gte('on_date', ledgerFrom),
   ]);
 
   const bad = res.find(r => r.error);
@@ -75,8 +79,14 @@ export async function loadAll(){
   D.balances = {}; (bal||[]).forEach(b => D.balances[b.child_id] = b.balance);
 
   D.weekEarned = {};
+  D.bonusDates = {};
   (ledger||[]).forEach(l => {
-    if(l.delta > 0) D.weekEarned[l.child_id] = (D.weekEarned[l.child_id]||0) + l.delta;
+    if(l.delta > 0 && l.on_date >= days[0] && l.on_date <= days[6]){
+      D.weekEarned[l.child_id] = (D.weekEarned[l.child_id]||0) + l.delta;
+    }
+    if(l.ref_type === 'bonus' && l.on_date){
+      (D.bonusDates[l.child_id] ??= new Set()).add(l.on_date);
+    }
   });
 
   if(!S.editSet)  S.editSet  = setIdFor(TODAY);
