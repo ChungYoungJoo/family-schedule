@@ -110,16 +110,20 @@ export function saveRoutine(){
 }
 
 /* ---------------- 숙제 ---------------- */
-export function sheetTask(t, childId){
-  editing = t ? {id:t.id} : {id:null, child:childId};
+export function sheetTask(t, childId, kind){
+  const k = t ? (t.kind || 'homework') : (kind || 'homework');
+  editing = t ? {id:t.id, kind:k} : {id:null, child:childId, kind:k};
   setReopen(null);
   const cid = t ? t.child_id : childId;
   const daily = !t || t.weekdays === null;
+  const isSup = k === 'supply';
 
-  openSheet(t ? '숙제 수정' : '숙제 추가',
+  openSheet((isSup ? '준비물 ' : '숙제 ') + (t ? '수정' : '추가'),
     `${esc(M(cid)?.name||'')} · ${esc(D.sets.find(s => s.id === S.editSet)?.name || '')}`, `
-    <label>내용</label><input id="tTitle" value="${esc(t?.title||'')}" placeholder="예: 수학 문제집 2쪽">
-    <label>메모 (선택)</label><input id="tNote" value="${esc(t?.note||'')}" placeholder="예: 채점까지">
+    <label>${isSup ? '무엇을 챙기나요' : '내용'}</label>
+    <input id="tTitle" value="${esc(t?.title||'')}" placeholder="${isSup ? '예: 체육복' : '예: 수학 문제집 2쪽'}">
+    <label>메모 (선택)</label><input id="tNote" value="${esc(t?.note||'')}"
+      placeholder="${isSup ? '예: 세탁해서 넣기' : '예: 채점까지'}">
     <label>언제</label>
     <div class="seg">
       <button class="${daily?'on':''}" id="tDaily" type="button">매일</button>
@@ -127,7 +131,7 @@ export function sheetTask(t, childId){
     <div class="opt-grid" id="tWds" style="${daily?'display:none':''}">
       ${[1,2,3,4,5,6,0].map(w => `<div class="opt ${t && (t.weekdays||[]).includes(w) ? 'sel':''}"
         data-wd="${w}">${WD[w]}</div>`).join('')}</div>
-    <label>포인트</label><input id="tPt" type="number" value="${t?.points ?? 10}">
+    <label>포인트</label><input id="tPt" type="number" value="${t?.points ?? (isSup ? 5 : 10)}">
     <button class="btn" style="margin-top:14px" data-act="savetask">저장</button>
     ${t ? `<button class="ghost" data-act="deltask" data-v="${t.id}">삭제</button>` : ''}`);
 
@@ -150,6 +154,7 @@ export function saveTask(){
     family_id: D.family.id,
     set_id:    S.editSet,
     child_id:  editing.id ? D.tasks.find(x => x.id === editing.id).child_id : editing.child,
+    kind:      editing.kind || 'homework',
     title:     $('tTitle').value.trim(),
     note:      $('tNote').value.trim() || null,
     weekdays:  daily ? null : wds,
