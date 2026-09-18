@@ -2,8 +2,8 @@
 //  sheets.js — 입력 폼 바텀시트 (이 날만 변경 / 스케줄 / 숙제 / 보상)
 // =====================================================================
 import {
-  sb, D, S, WD, CAT, DAY_NOTES, PRESETS,
-  esc, hm, toMin, mdLabel, wdOf, M, kids, pickers, noteOn, setIdFor,
+  sb, D, S, WD, CAT, DAY_NOTES, PRESETS, STATUS_TYPES,
+  esc, hm, toMin, mdLabel, wdOf, M, kids, pickers, noteOn, setIdFor, weekDays,
 } from './core.js';
 import { $, openSheet, closeSheet, toast } from './ui.js';
 import { run, setReopen } from './sync.js';
@@ -170,6 +170,181 @@ export function saveTask(){
     closeSheet(); setReopen(null);
     return r;
   }, '저장했어요');
+}
+
+/* ---------------- 스케줄 세트 / 적용 기간 ---------------- */
+export function sheetSet(s){
+  editing = { id: s?.id ?? null };
+  setReopen(null);
+  const used = s ? D.routines.filter(r => r.set_id === s.id).length
+                 + D.tasks.filter(t => t.set_id === s.id).length : 0;
+  openSheet(s ? '시간표 세트 수정' : '시간표 세트 추가',
+    '«학기 중», «방학» 처럼 통째로 다른 시간표를 담는 묶음입니다.', `
+    <label>아이콘</label><input id="stEm" value="${esc(s?.emoji||'📅')}" maxlength="4">
+    <label>이름</label><input id="stName" value="${esc(s?.name||'')}" placeholder="예: 겨울방학">
+    <button class="btn" style="margin-top:14px" data-act="saveset">저장</button>
+    ${s ? `<button class="ghost" data-act="delset" data-v="${s.id}" data-w="${esc(s.name)}"
+      >삭제 (일정 ${used}건도 함께 사라짐)</button>` : ''}`);
+}
+
+export function saveSet(){
+  const row = { family_id: D.family.id,
+                emoji: $('stEm').value.trim() || '📅',
+                name:  $('stName').value.trim() };
+  if(!row.name) return toast('이름을 입력해 주세요', true);
+  run(async () => {
+    const r = editing.id
+      ? await sb.from('schedule_sets').update(row).eq('id', editing.id)
+      : await sb.from('schedule_sets').insert(row);
+    closeSheet(); setReopen(null);
+    return r;
+  }, '저장했어요');
+}
+
+export function sheetPeriod(p, setId){
+  editing = { id: p?.id ?? null, set: p?.set_id || setId };
+  setReopen(null);
+  const setName = D.sets.find(s => s.id === editing.set)?.name || '';
+  const today = new Date().toISOString().slice(0,10);
+  openSheet(p ? '적용 기간 수정' : '적용 기간 추가',
+    `«${esc(setName)}» 시간표가 적용될 날짜 범위입니다.`, `
+    <label>이름 (선택)</label>
+    <input id="pLabel" value="${esc(p?.label||'')}" placeholder="예: 2학기, 여름방학">
+    <label>시작일</label><input id="pFrom" type="date" value="${p?.starts_on || today}">
+    <label>종료일</label><input id="pTo" type="date" value="${p?.ends_on || today}">
+    <button class="btn" style="margin-top:14px" data-act="saveperiod">저장</button>
+    ${p ? `<button class="ghost" data-act="delperiod" data-v="${p.id}">삭제</button>` : ''}
+    <div class="note" style="text-align:left">
+      기간이 서로 겹치지 않게 넣어주세요. 겹치면 시작일이 늦은 쪽이 적용됩니다.
+    </div>`);
+}
+
+export function savePeriod(){
+  const row = {
+    family_id: D.family.id, set_id: editing.set,
+    label: $('pLabel').value.trim() || null,
+    starts_on: $('pFrom').value,
+    ends_on:   $('pTo').value,
+  };
+  if(!row.starts_on || !row.ends_on) return toast('날짜를 입력해 주세요', true);
+  if(row.ends_on < row.starts_on)    return toast('종료일이 시작일보다 빨라요', true);
+
+  const clash = D.periods.find(p => p.id !== editing.id
+    && row.starts_on <= p.ends_on && row.ends_on >= p.starts_on);
+  if(clash){
+    const nm = D.sets.find(s => s.id === clash.set_id)?.name || '다른 기간';
+    if(!confirm(`«${nm}» (${clash.starts_on} ~ ${clash.ends_on}) 와 날짜가 겹칩니다.\n그대로 저장할까요?`)) return;
+  }
+
+  run(async () => {
+    const r = editing.id
+      ? await sb.from('set_periods').update(row).eq('id', editing.id)
+      : await sb.from('set_periods').insert(row);
+    closeSheet(); setReopen(null);
+    return r;
+  }, '저장했어요');
+}
+
+/* ---------------- 어른 요일 기본 일정 일괄 편집 ---------------- */
+const WK_ORDER = [1,2,3,4,5,6,0];
+const wdClass = w => w === 6 ? 'sat' : w === 0 ? 'sun' : '';
+
+export function sheetWeekly(mid){
+  const m = M(mid);
+  if(!m) return;
+  setReopen(null);
+  const helper = m.kind === 'helper';
+
+  const rows = WK_ORDER.map(w => {
+    const cur = D.weekly[mid+'|'+w] || '';
+    if(!helper){
+      return `<div class="wkrow"><span class="wd ${wdClass(w)}">${WD[w]}</span>
+        <select id="wk${w}">${STATUS_TYPES.map(t =>
+          `<option value="${esc(t)}" ${t===cur?'selected':''}>${esc(t)}</option>`).join('')}</select></div>`;
+    }
+    const t   = /(\d{2}:\d{2})\s*~\s*(\d{2}:\d{2})/.exec(cur);
+    const off = !t;
+    return `<div class="wkrow"><span class="wd ${wdClass(w)}">${WD[w]}</span>
+      <button class="offbtn ${off?'on':''}" data-off="${w}" type="button">휴무</button>
+      <input type="time" id="wk${w}S" value="${t?t[1]:'12:00'}" ${off?'disabled':''}>
+      <span class="wkdash">~</span>
+      <input type="time" id="wk${w}E" value="${t?t[2]:'18:00'}" ${off?'disabled':''}></div>`;
+  }).join('');
+
+  openSheet(`${m.emoji} ${m.name} · 요일별 기본 일정`,
+    helper ? '매주 반복되는 근무 시간입니다. 특정 날짜만 다를 때는 가족일정 탭에서 그날만 바꾸세요.'
+           : '매주 반복되는 기본값입니다. 특정 날짜만 다를 때는 가족일정 탭에서 그날만 바꾸세요.', `
+    ${helper ? `<h4>월~금 한 번에 채우기</h4>
+      <div class="wkrow" style="border:0">
+        <input type="time" id="allS" value="12:00"><span class="wkdash">~</span>
+        <input type="time" id="allE" value="18:00">
+        <button class="offbtn" id="applyAll" type="button" style="width:62px">적용</button></div>` : ''}
+    <h4>요일별</h4>
+    ${rows}
+    <div class="mrow" style="margin-top:6px"><div class="mx"><b>이번 주 날짜별 설정 지우기</b>
+      <span>하루만 다르게 해둔 값을 지우고 위 기본값을 따르게 합니다</span></div>
+      <div class="sw" id="wkClear"></div></div>
+    <button class="btn" style="margin-top:8px" data-act="saveweeklyall" data-v="${mid}">저장</button>`);
+
+  // 휴무 토글
+  document.querySelectorAll('#shBody [data-off]').forEach(b => b.onclick = () => {
+    const w = b.dataset.off;
+    b.classList.toggle('on');
+    const off = b.classList.contains('on');
+    $(`wk${w}S`).disabled = off;
+    $(`wk${w}E`).disabled = off;
+  });
+  // 월~금 일괄 적용
+  const all = $('applyAll');
+  if(all) all.onclick = () => {
+    [1,2,3,4,5].forEach(w => {
+      const b = document.querySelector(`#shBody [data-off="${w}"]`);
+      b.classList.remove('on');
+      $(`wk${w}S`).disabled = false; $(`wk${w}E`).disabled = false;
+      $(`wk${w}S`).value = $('allS').value;
+      $(`wk${w}E`).value = $('allE').value;
+    });
+    toast('월~금에 채웠어요');
+  };
+  $('wkClear').onclick = () => $('wkClear').classList.toggle('on');
+}
+
+export function saveWeeklyAll(mid){
+  const m = M(mid);
+  const helper = m.kind === 'helper';
+  const rows = [];
+
+  for(const w of WK_ORDER){
+    let status;
+    if(!helper){
+      status = $(`wk${w}`).value;
+    } else {
+      const off = document.querySelector(`#shBody [data-off="${w}"]`).classList.contains('on');
+      if(off) status = '휴무';
+      else {
+        const s = $(`wk${w}S`).value, e = $(`wk${w}E`).value;
+        if(!s || !e) return toast(`${WD[w]}요일 시간을 입력해 주세요`, true);
+        if(e <= s)   return toast(`${WD[w]}요일 퇴근이 출근보다 빨라요`, true);
+        status = `근무 ${s}~${e}`;
+      }
+    }
+    rows.push({ family_id: m.family_id, member_id: mid, weekday: w, status });
+  }
+
+  const clearDays = $('wkClear').classList.contains('on');
+  const days = weekDays();
+
+  run(async () => {
+    const r = await sb.from('weekly_status').upsert(rows, { onConflict:'member_id,weekday' });
+    if(r.error) return r;
+    if(clearDays){
+      const d = await sb.from('day_status').delete()
+        .eq('member_id', mid).gte('on_date', days[0]).lte('on_date', days[6]);
+      if(d.error) return d;
+    }
+    closeSheet(); setReopen(null);
+    return r;
+  }, `${m.name} 요일별 일정을 저장했어요`);
 }
 
 /* ---------------- 보상 ---------------- */
