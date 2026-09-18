@@ -8,7 +8,6 @@ import {
 import { $, render, openSheet, closeSheet, toast } from './ui.js';
 import { run, refresh, setReopen, reopenFn } from './sync.js';
 import { sheetEditDay, sheetRoutine, saveRoutine, sheetTask, saveTask, sheetReward, saveReward } from './sheets.js';
-import { downloadTemplate, sheetImportFile, commitImport, sheetImportPdf, commitPdf } from './import.js';
 
 /* 하루 전부 완료 보너스 — 서버가 실제 완료 여부를 다시 검증합니다 */
 async function maybeBonus(childId, date){
@@ -222,8 +221,9 @@ export const ACT = {
       closeSheet(); setReopen(null); return r; }, '삭제했어요');
   },
 
-  newtask:  ({v}) => sheetTask(null, v),
-  edittask: ({v}) => sheetTask(D.tasks.find(x => x.id === v)),
+  newtask:   ({v}) => sheetTask(null, v, 'homework'),
+  newsupply: ({v}) => sheetTask(null, v, 'supply'),
+  edittask:  ({v}) => sheetTask(D.tasks.find(x => x.id === v)),
   savetask: () => saveTask(),
   deltask:  ({v,w}) => {
     const name = w || D.tasks.find(x => x.id === v)?.title || '이 숙제';
@@ -268,13 +268,6 @@ export const ACT = {
     }).eq('id', D.family.id);
     closeSheet(); setReopen(null); return r;
   }, '저장했어요'),
-
-  /* ---- 파일로 한 번에 등록 ---- */
-  imptemplate: () => downloadTemplate(),
-  impfile:     () => sheetImportFile(),
-  impcommit:   () => commitImport(),
-  imppdf:      () => sheetImportPdf(),
-  pdfcommit:   () => commitPdf(),
 
   /* ---- 아이 전용 링크 ---- */
   kidlink: ({v}) => {
