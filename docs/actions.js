@@ -7,7 +7,9 @@ import {
 } from './core.js';
 import { $, render, openSheet, closeSheet, toast } from './ui.js';
 import { run, refresh, setReopen, reopenFn } from './sync.js';
-import { sheetEditDay, sheetRoutine, saveRoutine, sheetTask, saveTask, sheetReward, saveReward } from './sheets.js';
+import { sheetEditDay, sheetRoutine, saveRoutine, sheetTask, saveTask,
+         sheetReward, saveReward, sheetWeekly, saveWeeklyAll,
+         sheetSet, saveSet, sheetPeriod, savePeriod } from './sheets.js';
 
 /* 하루 전부 완료 보너스 — 서버가 실제 완료 여부를 다시 검증합니다 */
 async function maybeBonus(childId, date){
@@ -232,6 +234,34 @@ export const ACT = {
       const r = await sb.from('tasks').delete().eq('id',v);
       closeSheet(); setReopen(null); return r; }, '삭제했어요');
   },
+
+  /* ---- 시간표 세트 / 적용 기간 ---- */
+  setrename:  ({v}) => sheetSet(D.sets.find(s => s.id === v)),
+  newset:     () => sheetSet(null),
+  saveset:    () => saveSet(),
+  delset:     ({v,w}) => {
+    const n = D.routines.filter(r => r.set_id === v).length + D.tasks.filter(t => t.set_id === v).length;
+    if(!confirm(`«${w}» 세트를 삭제할까요?\n이 세트의 시간표·숙제 ${n}건과 적용 기간이 모두 사라집니다.`)) return;
+    run(async () => {
+      const r = await sb.from('schedule_sets').delete().eq('id', v);
+      S.editSet = null; closeSheet(); setReopen(null);
+      return r;
+    }, '세트를 삭제했어요');
+  },
+  editperiod: ({v}) => sheetPeriod(D.periods.find(p => p.id === v)),
+  newperiod:  ({v}) => sheetPeriod(null, v),
+  saveperiod: () => savePeriod(),
+  delperiod:  ({v}) => {
+    if(!confirm('이 적용 기간을 삭제할까요?\n해당 날짜에는 다른 시간표가 적용되거나, 없으면 첫 번째 세트가 쓰입니다.')) return;
+    run(async () => {
+      const r = await sb.from('set_periods').delete().eq('id', v);
+      closeSheet(); setReopen(null);
+      return r;
+    }, '삭제했어요');
+  },
+
+  weeklyedit:    ({v}) => sheetWeekly(v),
+  saveweeklyall: ({v}) => saveWeeklyAll(v),
 
   newreward:  () => sheetReward(null),
   editreward: ({v}) => sheetReward(D.rewards.find(x => x.id === v)),
