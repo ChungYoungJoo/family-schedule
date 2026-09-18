@@ -3,10 +3,10 @@
 // =====================================================================
 import {
   D, S, WD, CAT, TODAY, esc, hm, toMin, mdLabel, wdOf,
-  me, kids, dayItems, tasksOn, taskDone, attDone, checkable,
-  progress, noteOn, openOn, pendingRedeems,
+  me, kids, A, dayItems, tasksOn, taskDone, attDone, checkable,
+  progress, noteOn, openOn, pendingRedeems, pickupOf,
 } from './core.js';
-import { emOf, pickTag, itemChip, statusRow, slotRow, redeemRow } from './views-common.js';
+import { emOf, pickTag, statusRow, slotRow, redeemRow } from './views-common.js';
 
 const dateTitle = date => `${mdLabel(date).replace('/','월 ')}일 ${WD[wdOf(date)]}요일`;
 
@@ -126,18 +126,29 @@ export function parentToday(){
         <span class="badge" style="background:var(--gold-soft);color:#b07400">⭐ ${D.balances[c.id]??0}P</span>
         <span class="badge ${p.total&&p.done===p.total?'done':'need'}">${p.done}/${p.total}</span></div>
       <div class="bar" style="background:#eef0f6"><i style="width:${p.pct}%;background:${c.color}"></i></div>
-      <div style="margin-top:12px" class="chips">${items.length
-        ? items.map(it => itemChip(it,date)).join('')
-        : '<span class="chip empty">일정 없음</span>'}</div>
-      <div style="margin-top:10px;border-top:1px solid var(--line);padding-top:6px">
-        ${ts.map(t => {
-          const on = taskDone(t,date);
-          return `<div class="task" style="padding:5px 0;border:0" data-act="task" data-v="${t.id}" data-d="${date}">
-            <span style="font-size:13px">${on?'✅':'⬜'}</span>
-            <div class="tx"><b style="font-size:13px;font-weight:600;${on?'text-decoration:line-through;color:var(--ink-3)':''}"
-              >${esc(t.title)}</b></div></div>`;
-        }).join('') || '<div class="note" style="text-align:left;padding:6px 0">숙제 없음</div>'}
-      </div></div>`;
+
+      <div class="sublabel" style="margin-top:12px">오늘 일정</div>
+      ${items.length ? items.map(it => {
+        const a = it.needs_pickup ? pickupOf(it,date) : null;
+        const who = !it.needs_pickup ? ''
+          : a && A(a) ? `<span class="who">${A(a).emoji}${A(a).name}</span>`
+                      : `<span class="who miss">❗담당 미정</span>`;
+        return `<div class="litem ${it.off?'off':''}">
+          <span class="tm">${hm(it.starts_at)}~${hm(it.ends_at)}</span>
+          <span class="ttl">${emOf(it)} ${esc(it.title)}${it.off?' (휴강)':''}</span>${who}</div>`;
+      }).join('') : '<div class="note" style="text-align:left;padding:4px 0">일정 없음</div>'}
+
+      <div class="splitline"></div>
+
+      <div class="sublabel">오늘 숙제</div>
+      ${ts.map(t => {
+        const on = taskDone(t,date);
+        return `<div class="task" style="padding:5px 0;border:0" data-act="task" data-v="${t.id}" data-d="${date}">
+          <span style="font-size:13px">${on?'✅':'⬜'}</span>
+          <div class="tx"><b style="font-size:13.5px;font-weight:700;${on?'text-decoration:line-through;color:var(--ink-3)':''}"
+            >${esc(t.title)}</b></div></div>`;
+      }).join('') || '<div class="note" style="text-align:left;padding:4px 0">숙제 없음</div>'}
+      </div>`;
   }).join('');
 
   return `
