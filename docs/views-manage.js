@@ -57,10 +57,28 @@ export function manageView(){
   <div class="card">
     <div class="seg">${D.sets.map(s => `<button class="${sid===s.id?'on':''}" data-act="editset" data-v="${s.id}"
       >${s.emoji} ${esc(s.name)}</button>`).join('')}</div>
-    ${D.periods.filter(p => p.set_id === sid).map(p => `<div class="mrow"><div class="ic">📅</div>
-      <div class="mx"><b>${esc(p.label||'기간')}</b><span>${p.starts_on} ~ ${p.ends_on}</span></div></div>`).join('')
-      || '<div class="note" style="padding:6px">적용 기간이 없습니다</div>'}
-    <div class="note" style="text-align:left;padding:8px 2px 0">날짜가 위 기간에 들어가면 그 시간표가 자동으로 적용됩니다.</div>
+
+    <div class="mrow" data-act="setrename" data-v="${sid}">
+      <div class="ic">${setObj?.emoji || '📅'}</div>
+      <div class="mx"><b>${esc(setObj?.name||'')}</b><span>세트 이름·아이콘 바꾸기</span></div>
+      <span class="chev">›</span></div>
+
+    <div class="sublabel" style="margin-top:12px">적용 기간</div>
+    ${D.periods.filter(p => p.set_id === sid)
+      .sort((a,b) => a.starts_on < b.starts_on ? -1 : 1)
+      .map(p => {
+        const now = TODAY >= p.starts_on && TODAY <= p.ends_on;
+        return `<div class="mrow" data-act="editperiod" data-v="${p.id}">
+          <div class="ic" style="${now?'background:var(--ok-soft)':''}">📅</div>
+          <div class="mx"><b>${esc(p.label||'기간')}${now?' · 지금':''}</b>
+            <span>${p.starts_on} ~ ${p.ends_on}</span></div>
+          <span class="chev">›</span></div>`;
+      }).join('') || '<div class="note" style="padding:6px">적용 기간이 없습니다</div>'}
+    <button class="ghost" data-act="newperiod" data-v="${sid}">＋ 적용 기간 추가</button>
+    <button class="ghost" data-act="newset">＋ 시간표 세트 추가</button>
+    <div class="note" style="text-align:left;padding:8px 2px 0">
+      오늘 날짜가 어느 기간에 드는지로 시간표가 자동 선택됩니다. 개학·방학 날짜가 바뀌면 여기서 고치세요.
+    </div>
   </div>
 
   ${kids().map(c => `
@@ -105,6 +123,25 @@ export function manageView(){
       || '<div class="note" style="padding:6px">등록된 숙제가 없습니다</div>'}
     <button class="ghost" data-act="newtask" data-v="${c.id}">＋ 숙제 추가</button>
   </div>`).join('')}
+
+  <div class="sectitle"><h3>어른 요일별 기본 일정</h3><em>눌러서 한 번에 편집</em></div>
+  <div class="card">
+    ${D.members.filter(m => m.kind !== 'child').map(m => {
+      const days = [1,2,3,4,5,6,0].map(w => D.weekly[m.id+'|'+w] || '');
+      const work = days.filter(v => v && v !== '휴무');
+      const same = work.length && work.every(v => v === work[0]);
+      const summary = !work.length ? '전부 휴무'
+        : same ? `${work.length}일 · ${work[0]}`
+        : `${work.length}일 근무 · 요일마다 다름`;
+      return `<div class="mrow" data-act="weeklyedit" data-v="${m.id}">
+        <div class="ic" style="background:${m.color}22">${m.emoji}</div>
+        <div class="mx"><b>${esc(m.name)}</b><span>${esc(summary)}</span></div>
+        <span class="chev">›</span></div>`;
+    }).join('')}
+    <div class="note" style="text-align:left;padding:8px 2px 0">
+      선생님은 출근·퇴근 시각을 요일마다 직접 넣을 수 있고, «월~금 한 번에 채우기»로 한 번에 맞출 수 있습니다.
+    </div>
+  </div>
 
   <div class="sectitle"><h3>보상 목록</h3><em>${D.rewards.length}개</em></div>
   <div class="card">
