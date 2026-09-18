@@ -1,0 +1,15 @@
+{
+  "name": "우리집 하루",
+  "short_name": "우리집 하루",
+  "description": "아이들 요일별 스케줄·숙제와 부모 일정 조율을 한 곳에서",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#eef0f6",
+  "theme_color": "#eef0f6",
+  "lang": "ko",
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}
