@@ -80,9 +80,22 @@ export function manageView(){
       })).join('') || '<div class="note" style="padding:6px">등록된 일정이 없습니다</div>'}
     <button class="ghost" data-act="newroutine" data-v="${c.id}">＋ 스케줄 추가</button>
   </div>
+  <div class="sectitle"><h3>${c.emoji} ${esc(c.name)} · 준비물</h3><em>가져갈 것</em></div>
+  <div class="card">
+    ${D.tasks.filter(t => t.set_id===sid && t.child_id===c.id && t.kind==='supply')
+      .sort((a,b) => a.sort_order - b.sort_order)
+      .map(t => `<div class="mrow" data-act="edittask" data-v="${t.id}"><div class="ic">🎒</div>
+        <div class="mx"><b>${esc(t.title)}</b><span>${t.weekdays===null
+          ? '매일' : (t.weekdays||[]).map(x => WD[x]).join('·')+'요일'}${t.note?' · '+esc(t.note):''}</span></div>
+        <span class="pt">+${t.points}P</span>
+        <button class="del" data-act="deltask" data-v="${t.id}" data-w="${esc(t.title)}">🗑</button></div>`).join('')
+      || '<div class="note" style="padding:6px">등록된 준비물이 없습니다 (체육복·리코더 등)</div>'}
+    <button class="ghost" data-act="newsupply" data-v="${c.id}">＋ 준비물 추가</button>
+  </div>
+
   <div class="sectitle"><h3>${c.emoji} ${esc(c.name)} · 숙제/할 일</h3><em>${esc(setObj?.name||'')}</em></div>
   <div class="card">
-    ${D.tasks.filter(t => t.set_id===sid && t.child_id===c.id)
+    ${D.tasks.filter(t => t.set_id===sid && t.child_id===c.id && (t.kind||'homework')==='homework')
       .sort((a,b) => a.sort_order - b.sort_order)
       .map(t => `<div class="mrow" data-act="edittask" data-v="${t.id}"><div class="ic">📝</div>
         <div class="mx"><b>${esc(t.title)}</b><span>${t.weekdays===null
@@ -92,17 +105,6 @@ export function manageView(){
       || '<div class="note" style="padding:6px">등록된 숙제가 없습니다</div>'}
     <button class="ghost" data-act="newtask" data-v="${c.id}">＋ 숙제 추가</button>
   </div>`).join('')}
-
-  <div class="sectitle"><h3>파일로 한 번에 등록</h3><em>${esc(setObj?.name||'')} 에 추가</em></div>
-  <div class="card">
-    <div class="mrow" data-act="impfile"><div class="ic">📄</div>
-      <div class="mx"><b>엑셀 / CSV 로 시간표·숙제 등록</b><span>학기 초에 한 번에 넣을 때</span></div>
-      <span class="chev">›</span></div>
-    <div class="mrow" data-act="imppdf"><div class="ic">📕</div>
-      <div class="mx"><b>PDF 에서 숙제 가져오기</b><span>학원 안내문에서 줄을 골라 등록</span></div>
-      <span class="chev">›</span></div>
-    <button class="ghost" data-act="imptemplate">⬇ 엑셀 양식 내려받기</button>
-  </div>
 
   <div class="sectitle"><h3>보상 목록</h3><em>${D.rewards.length}개</em></div>
   <div class="card">
