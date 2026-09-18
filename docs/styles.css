@@ -147,17 +147,6 @@ main{flex:1; padding:14px 16px 96px}
 .del{border:1px solid var(--line); background:#fff; border-radius:8px; padding:4px 7px; font-size:12px; cursor:pointer; font-family:inherit; color:var(--ink-3); flex:none}
 .del:hover{border-color:var(--danger); color:var(--danger)}
 
-/* 가져오기 미리보기 */
-.improw{display:flex; gap:8px; align-items:center; padding:7px 2px; border-bottom:1px solid var(--line); font-size:12.5px}
-.improw:last-child{border-bottom:0}
-.improw .bx{width:20px;height:20px;flex:none;border-radius:6px;border:2px solid #d3d7e6;display:grid;place-items:center;color:#fff;font-size:11px;font-weight:900;cursor:pointer}
-.improw.sel .bx{background:var(--ok); border-color:var(--ok)}
-.improw .c1{flex:1; min-width:0; font-weight:700}
-.improw .c2{color:var(--ink-3); font-weight:600; white-space:nowrap}
-.improw.bad{opacity:.5}
-.filebox{display:block; border:1.5px dashed #ccd1e2; border-radius:12px; padding:18px; text-align:center; cursor:pointer; color:var(--ink-2); font-weight:700; font-size:13.5px}
-.filebox input{display:none}
-
 .coord{background:var(--card); border-radius:14px; box-shadow:var(--shadow); padding:13px; margin-bottom:10px}
 .coord .head{display:flex; align-items:center; gap:8px; margin-bottom:10px; flex-wrap:wrap}
 .coord .head b{font-size:14.5px; flex:1}
