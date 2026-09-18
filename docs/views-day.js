@@ -2,19 +2,57 @@
 //  views-day.js — 오늘 화면 (아이 / 보호자) + 포인트 상점
 // =====================================================================
 import {
-  D, S, WD, CAT, TODAY, esc, hm, toMin, mdLabel, wdOf,
-  me, kids, A, dayItems, tasksOn, taskDone, attDone, checkable,
-  progress, noteOn, openOn, pendingRedeems, pickupOf,
+  D, S, WD, CAT, TODAY, TOMORROW, esc, hm, toMin, mdLabel, wdOf,
+  me, kids, A, dayItems, homeworkOn, suppliesOn, taskDone, attDone, checkable,
+  progress, noteOn, openOn, pendingRedeems, pickupOf, streakOf, weekStamps,
 } from './core.js';
 import { emOf, pickTag, statusRow, slotRow, redeemRow } from './views-common.js';
 
 const dateTitle = date => `${mdLabel(date).replace('/','월 ')}일 ${WD[wdOf(date)]}요일`;
 
+/* 체크 한 줄 (숙제 / 준비물 공통) */
+const todoRow = (t, date) => `
+  <div class="task ${taskDone(t,date)?'done':''}" data-act="task" data-v="${t.id}" data-d="${date}">
+    <div class="box">✓</div>
+    <div class="tx"><b>${esc(t.title)}</b>${t.note?`<span>${esc(t.note)}</span>`:''}</div>
+    <span class="pt">+${t.points}P</span></div>`;
+
+/* 보호자 카드 안의 체크 한 줄 */
+const checkLine = (t, date) => {
+  const on = taskDone(t, date);
+  return `<div class="task" style="padding:5px 0;border:0" data-act="task" data-v="${t.id}" data-d="${date}">
+    <span style="font-size:13px">${on?'✅':'⬜'}</span>
+    <div class="tx"><b style="font-size:13.5px;font-weight:700;${
+      on?'text-decoration:line-through;color:var(--ink-3)':''}">${esc(t.title)}</b></div></div>`;
+};
+
+/* 연속 달성 + 이번 주 도장판 */
+function streakCard(cid){
+  const n = streakOf(cid);
+  const stamps = weekStamps(cid);
+  return `<div class="card" style="display:flex;align-items:center;gap:12px">
+    <div style="text-align:center;flex:none;width:64px">
+      <div style="font-size:26px;line-height:1">${n>0?'🔥':'🌱'}</div>
+      <b style="font-size:13px">${n>0?`${n}일 연속`:'시작해요'}</b>
+    </div>
+    <div style="flex:1">
+      <div class="sublabel">이번 주 도장판</div>
+      <div style="display:flex;gap:5px">
+        ${stamps.map(s => `<div style="flex:1;text-align:center">
+          <div style="font-size:10px;font-weight:800;color:var(--ink-3)">${WD[wdOf(s.date)]}</div>
+          <div style="font-size:17px;line-height:1.3">${
+            s.done ? '⭐' : s.future ? '·' : s.due ? '○' : '–'}</div></div>`).join('')}
+      </div>
+    </div></div>`;
+}
+
 /* ---------------- 아이: 오늘 ---------------- */
 export function kidToday(){
   const c = me(), date = TODAY;
   const p = progress(c.id, date);
-  const items = dayItems(c.id, date), ts = tasksOn(c.id, date), nt = noteOn(date);
+  const items = dayItems(c.id, date), nt = noteOn(date);
+  const hw = homeworkOn(c.id, date), sup = suppliesOn(c.id, date);
+  const supTom = suppliesOn(c.id, TOMORROW);
   const now = new Date();
   const nowMin = now.getHours()*60 + now.getMinutes();
   const attPt = D.family?.attend_points ?? 20;
@@ -48,19 +86,26 @@ export function kidToday(){
   </div>
   ${nt?`<div class="banner"><span class="em">${nt.emoji}</span>
     <div><b>오늘은 ${esc(nt.label)}이에요</b><span>평소 일정과 다르니 확인해요</span></div></div>`:''}
+
+  ${streakCard(c.id)}
+
   <div class="sectitle"><h3>오늘 일정</h3><em>학원 다녀오면 체크!</em></div>
   <div class="card"><div class="tl">${tl}</div></div>
+
+  ${sup.length ? `<div class="sectitle"><h3>오늘 챙길 것</h3><em>가방에 넣고 체크!</em></div>
+  <div class="card">${sup.map(t => todoRow(t,date)).join('')}</div>` : ''}
+
   <div class="sectitle"><h3>오늘 숙제</h3><em>누르면 체크돼요</em></div>
   <div class="card">
-    ${ts.length ? ts.map(t => `
-      <div class="task ${taskDone(t,date)?'done':''}" data-act="task" data-v="${t.id}" data-d="${date}">
-        <div class="box">✓</div>
-        <div class="tx"><b>${esc(t.title)}</b>${t.note?`<span>${esc(t.note)}</span>`:''}</div>
-        <span class="pt">+${t.points}P</span></div>`).join('')
-      : '<div class="note" style="padding:10px">오늘 숙제는 없어요!</div>'}
+    ${hw.length ? hw.map(t => todoRow(t,date)).join('')
+                : '<div class="note" style="padding:10px">오늘 숙제는 없어요!</div>'}
     ${clear?`<div class="allclear"><div class="big">🏅</div><b>오늘 할 일 끝!</b>
       <span>엄마·아빠 화면에도 바로 표시됐어요</span></div>`:''}
-  </div>`;
+  </div>
+
+  ${supTom.length ? `<div class="sectitle"><h3>내일 챙길 것</h3><em>자기 전에 미리!</em></div>
+  <div class="card">${supTom.map(t => `<div class="litem">
+      <span class="ttl">🎒 ${esc(t.title)}</span></div>`).join('')}</div>` : ''}`;
 }
 
 /* ---------------- 아이: 포인트 상점 ---------------- */
@@ -117,12 +162,15 @@ export function parentToday(){
       ${pend.map(redeemRow).join('')}</div>` : '';
 
   const kidCards = kids().map(c => {
-    const p = progress(c.id,date), items = dayItems(c.id,date), ts = tasksOn(c.id,date);
+    const p = progress(c.id,date), items = dayItems(c.id,date);
+    const hw = homeworkOn(c.id,date), sup = suppliesOn(c.id,date);
+    const streak = streakOf(c.id);
     return `<div class="card">
       <div style="display:flex;align-items:center;gap:9px;margin-bottom:10px">
         <span style="width:32px;height:32px;border-radius:50%;background:${c.color}22;display:grid;place-items:center;font-size:18px">${c.emoji}</span>
         <div style="flex:1"><b style="font-size:15px">${esc(c.name)}</b>
           <span style="font-size:11.5px;color:var(--ink-3);font-weight:600"> · ${esc(c.descr||'')}</span></div>
+        ${streak>0?`<span class="badge" style="background:#fff0e6;color:#d9480f">🔥 ${streak}일</span>`:''}
         <span class="badge" style="background:var(--gold-soft);color:#b07400">⭐ ${D.balances[c.id]??0}P</span>
         <span class="badge ${p.total&&p.done===p.total?'done':'need'}">${p.done}/${p.total}</span></div>
       <div class="bar" style="background:#eef0f6"><i style="width:${p.pct}%;background:${c.color}"></i></div>
@@ -140,14 +188,13 @@ export function parentToday(){
 
       <div class="splitline"></div>
 
+      ${sup.length ? `<div class="sublabel">오늘 챙길 것</div>
+        ${sup.map(t => checkLine(t,date)).join('')}
+        <div class="splitline"></div>` : ''}
+
       <div class="sublabel">오늘 숙제</div>
-      ${ts.map(t => {
-        const on = taskDone(t,date);
-        return `<div class="task" style="padding:5px 0;border:0" data-act="task" data-v="${t.id}" data-d="${date}">
-          <span style="font-size:13px">${on?'✅':'⬜'}</span>
-          <div class="tx"><b style="font-size:13.5px;font-weight:700;${on?'text-decoration:line-through;color:var(--ink-3)':''}"
-            >${esc(t.title)}</b></div></div>`;
-      }).join('') || '<div class="note" style="text-align:left;padding:4px 0">숙제 없음</div>'}
+      ${hw.map(t => checkLine(t,date)).join('')
+        || '<div class="note" style="text-align:left;padding:4px 0">숙제 없음</div>'}
       </div>`;
   }).join('');
 
@@ -160,5 +207,53 @@ export function parentToday(){
   <div class="sectitle"><h3>오늘 어른들 일정</h3><em>눌러서 변경</em></div>
   <div class="card"><div class="prow" style="margin:0">${statusRow(date)}</div></div>
   <div class="sectitle"><h3>아이별 현황</h3></div>
-  ${kidCards}`;
+  ${kidCards}
+  ${tomorrowCard()}`;
+}
+
+/* ---------------- 보호자: 내일 미리보기 ---------------- */
+function tomorrowCard(){
+  const date = TOMORROW;
+  const nt = noteOn(date);
+  const open = openOn(date);
+
+  const perKid = kids().map(c => {
+    const items = dayItems(c.id, date).filter(x => !x.off);
+    const sup = suppliesOn(c.id, date);
+    const hwN = homeworkOn(c.id, date).length;
+    if(!items.length && !sup.length && !hwN) return '';
+    return `<div style="margin-top:12px">
+      <div class="sublabel">${c.emoji} ${esc(c.name)}</div>
+      ${items.map(it => {
+        const a = it.needs_pickup ? pickupOf(it,date) : null;
+        const who = !it.needs_pickup ? ''
+          : a && A(a) ? `<span class="who">${A(a).emoji}${A(a).name}</span>`
+                      : `<span class="who miss">❗담당 미정</span>`;
+        return `<div class="litem"><span class="tm">${hm(it.starts_at)}~${hm(it.ends_at)}</span>
+          <span class="ttl">${emOf(it)} ${esc(it.title)}</span>${who}</div>`;
+      }).join('') || '<div class="litem"><span class="ttl" style="color:var(--ink-3)">일정 없음</span></div>'}
+      ${sup.length ? `<div class="litem"><span class="tm">🎒 챙길 것</span>
+        <span class="ttl">${sup.map(t => esc(t.title)).join(', ')}</span></div>` : ''}
+      ${hwN ? `<div class="litem"><span class="tm">📝 숙제</span>
+        <span class="ttl">${hwN}개</span></div>` : ''}
+    </div>`;
+  }).join('');
+
+  return `
+  <div class="sectitle"><h3>내일 미리보기</h3>
+    <em><button class="editday" data-act="editday" data-d="${date}">✏️ 내일만 변경</button></em></div>
+  <div class="card" style="border-left:4px solid ${open.length?'var(--warn)':'var(--primary)'}">
+    <h2>${dateTitle(date)}</h2>
+    <div class="sub" style="margin-bottom:6px">${
+      open.length ? `⚠️ 픽업 담당이 ${open.length}건 비어 있어요 — 오늘 저녁에 정해두세요`
+                  : '픽업 담당은 모두 정해졌어요 👍'}</div>
+    ${nt?`<div class="banner" style="margin:10px 0 0"><span class="em">${nt.emoji}</span>
+      <div><b>${esc(nt.label)}</b><span>평소와 다른 날입니다</span></div></div>`:''}
+    <div class="splitline"></div>
+    <div class="prow" style="margin:0">${statusRow(date)}</div>
+    ${perKid}
+    ${open.length ? `<div class="splitline"></div>
+      <div class="sublabel">담당 정하기</div>
+      ${open.map(it => slotRow(it,date)).join('')}` : ''}
+  </div>`;
 }
