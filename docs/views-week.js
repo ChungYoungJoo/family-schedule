@@ -30,7 +30,7 @@ export function weekView(){
           const a = it.needs_pickup ? pickupOf(it,date) : null;
           const mark = it.needs_pickup ? ` ${a && A(a) ? A(a).emoji : '❗'}` : '';
           return `<span class="chip ${it.extra?'extra':''}"><i class="who-dot" style="background:${c.color}"></i>`
-               + `${hm(it.starts_at)} ${esc(it.title)}${mark}</span>`;
+               + `${hm(it.starts_at)}~${hm(it.ends_at)} ${esc(it.title)}${mark}</span>`;
         }).join('') : '<span class="chip empty">일정 없음</span>'}</div>
       ${kid?'':`<button class="editday" data-act="editday" data-d="${date}">✏️</button>`}</div>`;
   }).join('');
