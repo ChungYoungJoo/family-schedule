@@ -76,7 +76,7 @@ export function manageView(){
           <div class="mx"><b>${WD[r.weekday]} · ${esc(r.title)}</b>
             <span>${hm(r.starts_at)}~${hm(r.ends_at)}${r.needs_pickup
               ? ` · 기본 담당 ${a && A(a) ? A(a).name : '미정'}` : ''}</span></div>
-          <span class="chev">›</span></div>`;
+          <button class="del" data-act="delroutine" data-v="${r.id}" data-w="${esc(r.title)}">🗑</button></div>`;
       })).join('') || '<div class="note" style="padding:6px">등록된 일정이 없습니다</div>'}
     <button class="ghost" data-act="newroutine" data-v="${c.id}">＋ 스케줄 추가</button>
   </div>
@@ -87,17 +87,29 @@ export function manageView(){
       .map(t => `<div class="mrow" data-act="edittask" data-v="${t.id}"><div class="ic">📝</div>
         <div class="mx"><b>${esc(t.title)}</b><span>${t.weekdays===null
           ? '매일' : (t.weekdays||[]).map(x => WD[x]).join('·')+'요일'}${t.note?' · '+esc(t.note):''}</span></div>
-        <span class="pt">+${t.points}P</span></div>`).join('')
+        <span class="pt">+${t.points}P</span>
+        <button class="del" data-act="deltask" data-v="${t.id}" data-w="${esc(t.title)}">🗑</button></div>`).join('')
       || '<div class="note" style="padding:6px">등록된 숙제가 없습니다</div>'}
     <button class="ghost" data-act="newtask" data-v="${c.id}">＋ 숙제 추가</button>
   </div>`).join('')}
+
+  <div class="sectitle"><h3>파일로 한 번에 등록</h3><em>${esc(setObj?.name||'')} 에 추가</em></div>
+  <div class="card">
+    <div class="mrow" data-act="impfile"><div class="ic">📄</div>
+      <div class="mx"><b>엑셀 / CSV 로 시간표·숙제 등록</b><span>학기 초에 한 번에 넣을 때</span></div>
+      <span class="chev">›</span></div>
+    <div class="mrow" data-act="imppdf"><div class="ic">📕</div>
+      <div class="mx"><b>PDF 에서 숙제 가져오기</b><span>학원 안내문에서 줄을 골라 등록</span></div>
+      <span class="chev">›</span></div>
+    <button class="ghost" data-act="imptemplate">⬇ 엑셀 양식 내려받기</button>
+  </div>
 
   <div class="sectitle"><h3>보상 목록</h3><em>${D.rewards.length}개</em></div>
   <div class="card">
     ${D.rewards.map(w => `<div class="mrow" data-act="editreward" data-v="${w.id}">
       <div class="ic">${w.emoji}</div>
       <div class="mx"><b>${esc(w.title)}</b><span>${w.cost}P</span></div>
-      <span class="chev">›</span></div>`).join('')}
+      <button class="del" data-act="delreward" data-v="${w.id}" data-w="${esc(w.title)}">🗑</button></div>`).join('')}
     <button class="ghost" data-act="newreward">＋ 보상 추가</button>
   </div>
 
@@ -108,7 +120,10 @@ export function manageView(){
         m.kind==='child' ? '아이 화면'
         : m.kind==='helper' ? '앱 계정 없음 · 픽업 담당으로만'
         : '보호자 화면'}</span></div>
-      ${m.kind==='child' ? `<button class="undo" data-act="kidlink" data-v="${m.id}">🔗 링크</button>` : ''}</div>`).join('')}
+      ${m.kind==='child' ? `<button class="undo" data-act="kidlink" data-v="${m.id}">🔗 링크</button>` : ''}
+      ${m.kind==='parent' ? '' : `<button class="del" data-act="delmember" data-v="${m.id}" data-w="${esc(m.name)}">🗑</button>`}
+      </div>`).join('')}
+    <div class="note" style="text-align:left;padding:8px 2px 0">아이를 삭제하면 그 아이의 스케줄·숙제·포인트 기록도 함께 사라집니다.</div>
   </div>
 
   <div class="sectitle"><h3>포인트 규칙</h3></div>
