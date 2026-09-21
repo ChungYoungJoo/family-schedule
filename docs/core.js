@@ -47,8 +47,34 @@ export const wdOf     = s => parseYmd(s).getDay();
 export const hm       = t => (t||'').slice(0,5);
 export const toMin    = t => +t.slice(0,2)*60 + +t.slice(3,5);
 export const esc      = s => String(s??'').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-// 받침 있으면 a, 없으면 b  (예: josa('엄마','이','가') → '엄마가')
+// 받침 있으면 a, 없으면 b  (예: josa('엄마','이','가') → '엄마가', josa('소빈','아','야') → '소빈아')
 export const josa     = (w,a,b) => w + (((w.charCodeAt(w.length-1)-0xAC00)%28) ? a : b);
+
+/** 문장에 쓸 이름. 짧은 이름(name)과 긴 이름(full_name) 중 하나만 고르고,
+ *  같은 말이 겹쳐 들어간 경우 한 번만 남깁니다.
+ *    '선생님' + '시터선생님'        → '시터선생님'
+ *    '시터선생님 시터선생님'        → '시터선생님'
+ *    '시터선생님 선생님'            → '시터선생님' */
+export function fullNameOf(p){
+  if(!p) return '';
+  const short = String(p.name || '').trim();
+  const long  = String(p.full_name || p.full || '').trim();
+  const nm = !long ? short : !short ? long
+           : long.includes(short)  ? long
+           : short.includes(long)  ? short
+           : long;
+  // 붙어 있는 말끼리 서로를 품고 있으면 긴 쪽 하나만 남깁니다
+  const out = [];
+  for(const t of nm.split(/[\s·]+/).filter(Boolean)){
+    const prev = out[out.length-1];
+    if(prev && (prev.includes(t) || t.includes(prev))){
+      if(t.length > prev.length) out[out.length-1] = t;
+      continue;
+    }
+    out.push(t);
+  }
+  return out.join(' ') || short;
+}
 
 /* ---------------- Supabase 클라이언트 ---------------- */
 export let sb = null;
@@ -60,7 +86,7 @@ export const D = {                 // 서버에서 읽어온 데이터
   notes:{}, cancels:new Set(), extras:[], pickups:{},
   weekly:{}, dayst:{}, taskLogs:new Set(), attLogs:new Set(),
   balances:{}, weekEarned:{}, bonusDates:{},   // bonusDates[childId] = Set('YYYY-MM-DD')
-  rewards:[], redemptions:[], notis:[],
+  rewards:[], redemptions:[], suggests:[], notis:[],
 };
 
 export const S = {                 // 화면 상태
@@ -152,8 +178,9 @@ export function statusOf(mid, date){
   return D.dayst[mid+'|'+date] ?? D.weekly[mid+'|'+wdOf(date)] ?? '출근';
 }
 
-export const noteOn         = date => D.notes[date] || null;
-export const pendingRedeems = () => D.redemptions.filter(r => r.status === 'pending');
+export const noteOn          = date => D.notes[date] || null;
+export const pendingRedeems  = () => D.redemptions.filter(r => r.status === 'pending');
+export const pendingSuggests = () => D.suggests.filter(s => s.status === 'pending');
 
 /* ---------------- 연속 달성 ---------------- */
 // 그날 할 일이 하나라도 있었는지 (지난 날짜는 취소·추가 예외를 빼고 대략만 계산)
