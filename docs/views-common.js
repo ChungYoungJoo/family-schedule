@@ -2,7 +2,7 @@
 //  views-common.js — 여러 화면이 함께 쓰는 조각들
 // =====================================================================
 import {
-  D, S, CAT, HELPFUL, BUSY, esc, josa, hm, A, M, pickers, fullNameOf,
+  D, S, CAT, HELPFUL, BUSY, esc, josa, hm, A, M, pickers, fullNameOf, iconOf,
   pickupOf, pickupRow, defaultPickup, statusOf,
 } from './core.js';
 
@@ -17,8 +17,8 @@ export function pickTag(it, date){
   const p = A(a);
   if(!p) return '';
   const nm = fullNameOf(p);
-  // 아이콘 자리에 이름과 같은 글자가 들어 있으면 이름만 한 번 보여줍니다
-  const em = p.emoji && !nm.includes(p.emoji) ? esc(p.emoji) + ' ' : '';
+  const ic = iconOf(p.emoji);
+  const em = ic && !nm.includes(ic) ? esc(ic) + ' ' : '';
   return `<span class="tag ok">${em}${esc(nm)}${josa(nm,'이','가')} 데리러 와요</span>`;
 }
 
@@ -83,8 +83,8 @@ export function suggestRow(s){
       <b>${c?c.emoji:''} ${esc(c?c.name:'')} · ${esc(s.emoji||'🎁')} ${esc(s.title)}</b>
       <span>${s.created_at.slice(5,10)}${s.note?` · “${esc(s.note)}”`:''}</span></div>
     <div class="sgrow">
-      <input class="sgpt" id="sg${s.id}" type="number" min="1" step="10" value="100" inputmode="numeric">
-      <span class="sgp">P</span>
+      <label class="sgin"><input id="sg${s.id}" type="number" min="1" step="10"
+        value="100" inputmode="numeric"><b>P</b></label>
       <button class="abtn on" style="background:var(--ok)" data-act="sugok" data-v="${s.id}">확정</button>
       <button class="abtn" data-act="sugno" data-v="${s.id}">거절</button></div></div>`;
 }
