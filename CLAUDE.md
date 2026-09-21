@@ -38,6 +38,7 @@ docs/                  ← 배포되는 앱
   ui.js                render / paintHeader / 바텀시트 / 토스트 / 로그인 화면
   sync.js              refresh / run(쓰기 공통) / reopenFn
   sheets.js            입력 폼 (이 날만 변경, 스케줄, 숙제·준비물, 보상, 세트·기간, 요일 일괄)
+  sheets-member.js     입력 폼 (픽업 도와줄 사람 추가·수정) — sheets.js 가 20KB 에 닿아 분리
   actions.js           ACT 테이블 + data-act 이벤트 위임
   app.js               진입점 (boot)
 supabase/
@@ -56,7 +57,10 @@ prototype.html         초기 화면 시안 (앱과 무관, 업로드 안 됨)
 2. **이 날만 변경** — 요일 반복은 그대로 두고 날짜별 예외를 얹음.
    `date_notes`(하루 표시) / `routine_cancels`(그날 취소) / `extra_events`(그날 추가)
    → `dayItems(childId, date)` 가 세 개를 합쳐 그날의 실제 일정을 만듦
-3. **픽업 담당** — `routines.default_pickup_id`(요일 기본) 위에 `pickups`(날짜별) 덮어쓰기
+3. **픽업 담당** — `routines.default_pickup_id`(요일 기본) 위에 `pickups`(날짜별) 덮어쓰기.
+   후보는 `pickers()` = `can_pickup` 인 구성원 + 자율 귀가.
+   가끔 오는 사람은 `kind='helper'` 로 추가하며(앱 계정 없음), 요일 기본 일정이
+   없으면 `hasWeekly()` 로 «어른들 일정» 줄에서는 빠집니다
 4. **포인트** — 클라이언트가 못 건드림. `task_logs`/`attendance_logs` 삽입 시 **DB 트리거**가 적립,
    삭제 시 회수. 하루 전부 완료 보너스는 `claim_daily_bonus()` RPC 가 서버에서 재검증
 5. **연속 달성** — `point_ledger` 의 `ref_type='bonus'` 행이 있는 날 = 다 한 날
