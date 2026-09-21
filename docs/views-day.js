@@ -128,11 +128,14 @@ export function shopView(){
     const st = sLabel[s.status];
     const w  = s.reward_id ? D.rewards.find(x => x.id === s.reward_id) : null;
     const sub = s.status === 'approved' && w ? `${w.cost}P 로 정해졌어요`
+              : s.status === 'rejected' ? '🗑 을 눌러 목록에서 지울 수 있어요'
               : s.note ? esc(s.note) : s.created_at.slice(5,10);
+    // 확정된 제안은 보상이 만들어졌으니 기록으로 남기고, 나머지는 아이가 지울 수 있습니다
+    const canDel = s.status === 'pending' || s.status === 'rejected';
     return `<div class="mrow"><div class="ic">${esc(s.emoji||'🎁')}</div>
       <div class="mx"><b>${esc(s.title)}</b><span>${sub}</span></div>
       <span class="badge ${st[0]}">${st[1]}</span>
-      ${s.status === 'pending'
+      ${canDel
         ? `<button class="del" data-act="delsuggest" data-v="${s.id}" data-w="${esc(s.title)}">🗑</button>` : ''}</div>`;
   }).join('');
 
