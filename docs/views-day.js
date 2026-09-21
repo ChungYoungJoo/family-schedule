@@ -3,7 +3,6 @@
 // =====================================================================
 import {
   D, S, WD, CAT, TODAY, TOMORROW, esc, josa, hm, toMin, mdLabel, wdOf,
-  iconOf, dedupeRepeat, cleanName,
   me, kids, A, dayItems, homeworkOn, suppliesOn, taskDone, attDone, checkable,
   progress, noteOn, openOn, pendingRedeems, pendingSuggests, pickupOf, streakOf, weekStamps,
 } from './core.js';
@@ -11,11 +10,11 @@ import { emOf, pickTag, statusRow, slotRow, redeemRow, suggestRow } from './view
 
 const dateTitle = date => `${mdLabel(date).replace('/','월 ')}일 ${WD[wdOf(date)]}요일`;
 
-/* 픽업 담당 한 칸 — 아이콘 칸에 글자가 들어가 있으면 이름만 보여줍니다 */
+/* 픽업 담당 한 칸 */
 const whoSpan = a => {
   const p = A(a);
-  if(!p) return `<span class="who miss">❗담당 미정</span>`;
-  return `<span class="who">${esc(dedupeRepeat(`${iconOf(p.emoji)} ${cleanName(p.name)}`))}</span>`;
+  return p ? `<span class="who">${p.emoji}${esc(p.name)}</span>`
+           : `<span class="who miss">❗담당 미정</span>`;
 };
 
 /* 체크 한 줄 (숙제 / 준비물 공통) */
