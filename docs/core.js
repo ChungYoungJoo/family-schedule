@@ -55,6 +55,26 @@ export const josa     = (w,a,b) => w + (((w.charCodeAt(w.length-1)-0xAC00)%28) ?
  *    '선생님' + '시터선생님'        → '시터선생님'
  *    '시터선생님 시터선생님'        → '시터선생님'
  *    '시터선생님 선생님'            → '시터선생님' */
+// 이름을 끊어 읽는 구분자 (\s 가 못 잡는 폭 없는 공백·중점류까지 포함)
+const NAMESEP = /[\s​　·・‧•|/\\,]+/;
+
+/** 같은 말이 붙어서 두 번 나오면 한 번으로 줄입니다.
+ *    '시터선생님 시터선생님' · '시터선생님시터선생님' · '선생님 시터선생님' → '시터선생님' */
+export function dedupeRepeat(s){
+  const out = [];
+  for(const w of String(s ?? '').split(NAMESEP).filter(Boolean)){
+    const prev = out[out.length-1];
+    if(prev && (prev.includes(w) || w.includes(prev))){
+      if(w.length > prev.length) out[out.length-1] = w;   // 긴 쪽만 남김
+      continue;
+    }
+    out.push(w);
+  }
+  const r = out.join(' ');
+  const h = r.length / 2;                                  // 구분자 없이 이어 붙은 경우
+  return (Number.isInteger(h) && h > 1 && r.slice(0,h) === r.slice(h)) ? r.slice(0,h) : r;
+}
+
 export function fullNameOf(p){
   if(!p) return '';
   const short = String(p.name || '').trim();
@@ -63,17 +83,7 @@ export function fullNameOf(p){
            : long.includes(short)  ? long
            : short.includes(long)  ? short
            : long;
-  // 붙어 있는 말끼리 서로를 품고 있으면 긴 쪽 하나만 남깁니다
-  const out = [];
-  for(const t of nm.split(/[\s·]+/).filter(Boolean)){
-    const prev = out[out.length-1];
-    if(prev && (prev.includes(t) || t.includes(prev))){
-      if(t.length > prev.length) out[out.length-1] = t;
-      continue;
-    }
-    out.push(t);
-  }
-  return out.join(' ') || short;
+  return dedupeRepeat(nm) || short;
 }
 
 /** 아이콘 칸(emoji)에 이모지가 아니라 이름 같은 글자가 들어간 경우는 버립니다.
