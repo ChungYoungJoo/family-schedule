@@ -9,7 +9,8 @@ import { $, render, openSheet, closeSheet, toast } from './ui.js';
 import { run, refresh, setReopen, reopenFn } from './sync.js';
 import { sheetEditDay, sheetRoutine, saveRoutine, sheetTask, saveTask,
          sheetReward, saveReward, sheetWeekly, saveWeeklyAll,
-         sheetSet, saveSet, sheetPeriod, savePeriod } from './sheets.js';
+         sheetSet, saveSet, sheetPeriod, savePeriod,
+         sheetSuggest, saveSuggest } from './sheets.js';
 
 /* 하루 전부 완료 보너스 — 서버가 실제 완료 여부를 다시 검증합니다 */
 async function maybeBonus(childId, date){
@@ -186,6 +187,28 @@ export const ACT = {
   }, '교환을 신청했어요! 승인을 기다려요 🎁'),
   redeemok: ({v}) => run(() => sb.from('redemptions').update({status:'approved'}).eq('id',v), '승인했어요'),
   redeemno: ({v}) => run(() => sb.from('redemptions').update({status:'rejected'}).eq('id',v), '거절했어요'),
+
+  /* ---- 아이가 제안한 보상 ---- */
+  suggest:     () => sheetSuggest(),
+  savesuggest: () => saveSuggest(),
+  delsuggest:  ({v,w}) => {
+    if(!confirm(`'${w || '이 제안'}' 을(를) 지울까요?`)) return;
+    run(() => sb.from('reward_suggestions').delete().eq('id',v), '지웠어요');
+  },
+  /* 포인트를 정해 확정 → 보상 목록에 추가 (서버 RPC 가 한 번에 처리) */
+  sugok: ({v}) => {
+    const el = $('sg'+v);
+    const pt = Number(el && el.value);
+    if(!Number.isFinite(pt) || pt <= 0) return toast('포인트를 1 이상으로 입력해 주세요', true);
+    const s = D.suggests.find(x => x.id === v);
+    if(!confirm(`'${s?.title || '이 보상'}' 을(를) ${pt}P 짜리 보상으로 상점에 올릴까요?`)) return;
+    run(() => sb.rpc('approve_reward_suggestion', { p_id:v, p_cost:pt }), `${pt}P 보상으로 추가했어요`);
+  },
+  sugno: ({v}) => {
+    const s = D.suggests.find(x => x.id === v);
+    if(!confirm(`'${s?.title || '이 제안'}' 을(를) 거절할까요?\n아이 화면에 알림이 갑니다.`)) return;
+    run(() => sb.rpc('reject_reward_suggestion', { p_id:v }), '거절했어요');
+  },
 
   /* ---- 알림 ---- */
   notis: () => openSheet('알림', '',
