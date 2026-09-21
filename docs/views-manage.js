@@ -3,9 +3,9 @@
 // =====================================================================
 import {
   D, S, WD, CAT, TODAY, esc, hm, toMin, mdLabel,
-  M, A, kids, setNameFor, pendingRedeems,
+  M, A, kids, setNameFor, pendingRedeems, pendingSuggests,
 } from './core.js';
-import { redeemRow } from './views-common.js';
+import { redeemRow, suggestRow } from './views-common.js';
 
 /* 이번 주에 걸려 있는 "이 날만 변경" 목록 */
 function exceptionRows(){
@@ -38,6 +38,7 @@ function exceptionRows(){
 
 export function manageView(){
   const pend = pendingRedeems();
+  const sug  = pendingSuggests();
   const sid  = S.editSet;
   const setObj = D.sets.find(s => s.id === sid);
   const ex = exceptionRows();
@@ -140,6 +141,16 @@ export function manageView(){
     }).join('')}
     <div class="note" style="text-align:left;padding:8px 2px 0">
       선생님은 출근·퇴근 시각을 요일마다 직접 넣을 수 있고, «월~금 한 번에 채우기»로 한 번에 맞출 수 있습니다.
+    </div>
+  </div>
+
+  <div class="sectitle"><h3>아이가 제안한 보상</h3><em>${sug.length ? sug.length+'건 검토 대기' : '대기 없음'}</em></div>
+  <div class="card">
+    ${sug.length ? sug.map(suggestRow).join('')
+                 : '<div class="note" style="padding:8px">아이가 제안한 보상이 없습니다</div>'}
+    <div class="note" style="text-align:left;padding:8px 2px 0">
+      아이가 «포인트 상점» 에서 갖고 싶은 것을 올리면 여기에 쌓입니다.
+      포인트를 정해 확정하면 아래 보상 목록에 바로 추가됩니다.
     </div>
   </div>
 
