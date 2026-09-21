@@ -11,6 +11,7 @@ import { sheetEditDay, sheetRoutine, saveRoutine, sheetTask, saveTask,
          sheetReward, saveReward, sheetWeekly, saveWeeklyAll,
          sheetSet, saveSet, sheetPeriod, savePeriod,
          sheetSuggest, saveSuggest } from './sheets.js';
+import { sheetMember, saveMember } from './sheets-member.js';
 
 /* 하루 전부 완료 보너스 — 서버가 실제 완료 여부를 다시 검증합니다 */
 async function maybeBonus(childId, date){
@@ -297,6 +298,13 @@ export const ACT = {
       closeSheet(); setReopen(null); return r; }, '삭제했어요');
   },
 
+  /* ---- 픽업 도와줄 사람 ---- */
+  newmember:  () => sheetMember(null),
+  editmember: ({v}) => sheetMember(M(v)),
+  savemember: () => saveMember(),
+  /* 담당 고르는 자리에서 바로 추가 → 저장하면 그 일정에 배정됩니다 */
+  newpicker:  ({k,v,d}) => sheetMember(null, {k,v,d}),
+
   delmember: ({v,w}) => {
     const m = M(v);
     const name = w || m?.name || '이 구성원';
@@ -304,7 +312,11 @@ export const ACT = {
       ? '\n\n⚠️ 이 아이의 스케줄·숙제·포인트 기록이 모두 사라집니다. 되돌릴 수 없습니다.'
       : '\n\n이 사람이 담당으로 지정된 일정은 담당 미정이 됩니다.';
     if(!confirm(`'${name}' 을(를) 삭제할까요?${extra}`)) return;
-    run(() => sb.from('members').delete().eq('id',v), '삭제했어요');
+    run(async () => {
+      const r = await sb.from('members').delete().eq('id',v);
+      closeSheet(); setReopen(null);
+      return r;
+    }, '삭제했어요');
   },
 
   editpoints: () => {
