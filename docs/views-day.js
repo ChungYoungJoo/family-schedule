@@ -2,7 +2,8 @@
 //  views-day.js — 오늘 화면 (아이 / 보호자) + 포인트 상점
 // =====================================================================
 import {
-  D, S, WD, CAT, TODAY, TOMORROW, esc, josa, hm, toMin, mdLabel, wdOf, iconOf, dedupeRepeat,
+  D, S, WD, CAT, TODAY, TOMORROW, esc, josa, hm, toMin, mdLabel, wdOf,
+  iconOf, dedupeRepeat, cleanName,
   me, kids, A, dayItems, homeworkOn, suppliesOn, taskDone, attDone, checkable,
   progress, noteOn, openOn, pendingRedeems, pendingSuggests, pickupOf, streakOf, weekStamps,
 } from './core.js';
@@ -14,7 +15,7 @@ const dateTitle = date => `${mdLabel(date).replace('/','월 ')}일 ${WD[wdOf(dat
 const whoSpan = a => {
   const p = A(a);
   if(!p) return `<span class="who miss">❗담당 미정</span>`;
-  return `<span class="who">${esc(dedupeRepeat(`${iconOf(p.emoji)} ${p.name}`))}</span>`;
+  return `<span class="who">${esc(dedupeRepeat(`${iconOf(p.emoji)} ${cleanName(p.name)}`))}</span>`;
 };
 
 /* 체크 한 줄 (숙제 / 준비물 공통) */
