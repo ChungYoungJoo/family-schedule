@@ -2,7 +2,8 @@
 //  views-common.js — 여러 화면이 함께 쓰는 조각들
 // =====================================================================
 import {
-  D, S, CAT, HELPFUL, BUSY, esc, josa, hm, A, M, pickers, fullNameOf, iconOf,
+  D, S, CAT, HELPFUL, BUSY, esc, josa, hm, A, M, pickers,
+  fullNameOf, iconOf, dedupeRepeat,
   pickupOf, pickupRow, defaultPickup, statusOf,
 } from './core.js';
 
@@ -16,10 +17,10 @@ export function pickTag(it, date){
   if(a === 'self') return `<span class="tag self">🚶 끝나고 혼자 집으로 와요</span>`;
   const p = A(a);
   if(!p) return '';
-  const nm = fullNameOf(p);
-  const ic = iconOf(p.emoji);
-  const em = ic && !nm.includes(ic) ? esc(ic) + ' ' : '';
-  return `<span class="tag ok">${em}${esc(nm)}${josa(nm,'이','가')} 데리러 와요</span>`;
+  const nm  = fullNameOf(p);
+  // 아이콘 + 이름을 한 덩어리로 놓고 한 번 더 중복을 걷어냅니다
+  const who = dedupeRepeat(`${iconOf(p.emoji)} ${nm}`);
+  return `<span class="tag ok">${esc(who)}${josa(nm,'이','가')} 데리러 와요</span>`;
 }
 
 /* 일정 한 칸 (칩) */
