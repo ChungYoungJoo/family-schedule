@@ -2,11 +2,11 @@
 //  views-day.js — 오늘 화면 (아이 / 보호자) + 포인트 상점
 // =====================================================================
 import {
-  D, S, WD, CAT, TODAY, TOMORROW, esc, hm, toMin, mdLabel, wdOf,
+  D, S, WD, CAT, TODAY, TOMORROW, esc, josa, hm, toMin, mdLabel, wdOf,
   me, kids, A, dayItems, homeworkOn, suppliesOn, taskDone, attDone, checkable,
-  progress, noteOn, openOn, pendingRedeems, pickupOf, streakOf, weekStamps,
+  progress, noteOn, openOn, pendingRedeems, pendingSuggests, pickupOf, streakOf, weekStamps,
 } from './core.js';
-import { emOf, pickTag, statusRow, slotRow, redeemRow } from './views-common.js';
+import { emOf, pickTag, statusRow, slotRow, redeemRow, suggestRow } from './views-common.js';
 
 const dateTitle = date => `${mdLabel(date).replace('/','월 ')}일 ${WD[wdOf(date)]}요일`;
 
@@ -79,7 +79,7 @@ export function kidToday(){
   return `
   <div class="hero" style="background:linear-gradient(135deg,${c.color},${c.color}bb)">
     <div class="date">${dateTitle(date)}</div>
-    <div class="hi">${esc(c.name)}야, ${clear?'오늘 다 했어! 최고 🎉':'오늘 할 일이야!'}</div>
+    <div class="hi">${esc(josa(c.name,'아','야'))}, ${clear?'오늘 다 했어! 최고 🎉':'오늘 할 일이야!'}</div>
     <div class="bar"><i style="width:${p.pct}%"></i></div>
     <div class="barlabel"><span>완료 ${p.done} / ${p.total}</span><span>${p.pct}%</span></div>
     <div class="ptpill">⭐ 내 포인트 ${D.balances[c.id] ?? 0}P</div>
@@ -114,6 +114,21 @@ export function shopView(){
   const my = D.redemptions.filter(r => r.child_id === c.id);
   const label = {pending:['wait','승인 대기'], approved:['done','교환 완료'], rejected:['need','거절됨']};
 
+  // 내가 제안한 보상
+  const mySug = D.suggests.filter(s => s.child_id === c.id);
+  const sLabel = {pending:['wait','엄마·아빠가 보는 중'], approved:['done','상점에 생겼어요'], rejected:['need','다음에 해요']};
+  const sugRows = mySug.slice(0,10).map(s => {
+    const st = sLabel[s.status];
+    const w  = s.reward_id ? D.rewards.find(x => x.id === s.reward_id) : null;
+    const sub = s.status === 'approved' && w ? `${w.cost}P 로 정해졌어요`
+              : s.note ? esc(s.note) : s.created_at.slice(5,10);
+    return `<div class="mrow"><div class="ic">${esc(s.emoji||'🎁')}</div>
+      <div class="mx"><b>${esc(s.title)}</b><span>${sub}</span></div>
+      <span class="badge ${st[0]}">${st[1]}</span>
+      ${s.status === 'pending'
+        ? `<button class="del" data-act="delsuggest" data-v="${s.id}" data-w="${esc(s.title)}">🗑</button>` : ''}</div>`;
+  }).join('');
+
   return `
   <div class="ptcard">
     <div class="lbl">${esc(c.name)}의 포인트</div>
@@ -131,6 +146,11 @@ export function shopView(){
             : `<button ${can?'':'disabled'} data-act="redeem" data-v="${w.id}"
                 >${can?'교환 신청':`${w.cost-bal}P 더 모아요`}</button>`}</div>`;
   }).join('')}</div>
+  <div class="sectitle"><h3>갖고 싶은 보상 말하기</h3><em>엄마·아빠가 포인트를 정해줘요</em></div>
+  <div class="card">
+    ${sugRows || '<div class="note" style="padding:8px">갖고 싶은 게 있으면 말해봐! 🎈</div>'}
+    <button class="ghost" data-act="suggest">＋ 이런 보상 갖고 싶어요</button>
+  </div>
   <div class="sectitle"><h3>내 신청 내역</h3></div>
   <div class="card">${my.length ? my.slice(0,10).map(r => {
     const w = D.rewards.find(x => x.id === r.reward_id);
@@ -145,6 +165,7 @@ export function shopView(){
 export function parentToday(){
   const date = TODAY;
   const open = openOn(date), pend = pendingRedeems(), nt = noteOn(date);
+  const sug = pendingSuggests();
 
   const alertCard = open.length ? `
     <div class="card" style="border-left:4px solid var(--danger)">
@@ -160,6 +181,12 @@ export function parentToday(){
       <h2 style="color:#b07400">🎁 보상 승인 요청 ${pend.length}건</h2>
       <div class="sub">아이가 포인트로 교환을 신청했어요</div>
       ${pend.map(redeemRow).join('')}</div>` : '';
+
+  const suggestCard = sug.length ? `
+    <div class="card" style="border-left:4px solid var(--primary)">
+      <h2 style="color:var(--primary)">💡 아이가 갖고 싶다는 보상 ${sug.length}건</h2>
+      <div class="sub">포인트를 정해서 확정하면 아이 상점에 올라갑니다</div>
+      ${sug.map(suggestRow).join('')}</div>` : '';
 
   const kidCards = kids().map(c => {
     const p = progress(c.id,date), items = dayItems(c.id,date);
@@ -203,7 +230,7 @@ export function parentToday(){
     <em><button class="editday" data-act="editday" data-d="${date}">✏️ 이 날만 변경</button></em></div>
   ${nt?`<div class="banner"><span class="em">${nt.emoji}</span>
     <div><b>오늘은 ${esc(nt.label)}</b><span>해당 일정이 오늘만 취소·변경됐습니다</span></div></div>`:''}
-  ${alertCard}${redeemCard}
+  ${alertCard}${redeemCard}${suggestCard}
   <div class="sectitle"><h3>오늘 어른들 일정</h3><em>눌러서 변경</em></div>
   <div class="card"><div class="prow" style="margin:0">${statusRow(date)}</div></div>
   <div class="sectitle"><h3>아이별 현황</h3></div>
