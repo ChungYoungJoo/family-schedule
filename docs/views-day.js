@@ -222,7 +222,7 @@ export function parentToday(){
         return `<div class="litem ${it.off?'off':''} ${on?'done':''} ${can?'tap':''}"
           ${can?`data-act="att" data-k="${it.kind}" data-v="${it.id}" data-d="${date}"`:''}>
           <span class="tm">${hm(it.starts_at)}~${hm(it.ends_at)}</span>
-          <span class="mini ${can?(on?'on':''):'ghost'}">${on?'✓':''}</span>
+          <span class="mini ${can?(on?'on':''):'na'}">${can?(on?'✓':''):'–'}</span>
           <span class="ttl">${emOf(it)} ${esc(it.title)}${it.off?' (휴강)':''}</span>${who}</div>`;
       }).join('') : '<div class="note" style="text-align:left;padding:4px 0">일정 없음</div>'}
 
