@@ -62,6 +62,14 @@ const NAMESEP = /[\s​　·・‧•|/\\,]+/;
  *  눈에는 똑같지만 그냥 비교하면 다른 문자열이라 중복 판정이 실패합니다. */
 const nfc = s => String(s ?? '').normalize('NFC').trim();
 
+// 화면에 아무것도 그리지 않는 서식 문자들. 이름 사이에 하나만 끼어 있어도
+// 글자 수가 어긋나 «시터선생님시터선생님» 같은 중복을 못 걸러냅니다.
+// (U+200D 는 이모지 조합에도 쓰이므로 이름에만 적용합니다)
+const INVISIBLE = /[­͏؜᠎​-‏‪-‮⁠-⁤﻿]/g;
+
+/** 이름 칸 정리 — 조합 형태를 맞추고 보이지 않는 문자를 걷어냅니다 */
+export const cleanName = s => nfc(s).replace(INVISIBLE, '').trim();
+
 /** 한 낱말이 그대로 두 번 이어 붙었으면 한 번으로 ('시터선생님시터선생님') */
 const halve = w => {
   const h = w.length / 2;
@@ -86,8 +94,8 @@ export function dedupeRepeat(s){
 
 export function fullNameOf(p){
   if(!p) return '';
-  const short = nfc(p.name);
-  const long  = nfc(p.full_name || p.full);
+  const short = cleanName(p.name);
+  const long  = cleanName(p.full_name || p.full);
   const nm = !long ? short : !short ? long
            : long.includes(short)  ? long
            : short.includes(long)  ? short
