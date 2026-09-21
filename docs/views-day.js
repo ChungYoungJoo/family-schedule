@@ -212,13 +212,18 @@ export function parentToday(){
         <span class="badge ${p.total&&p.done===p.total?'done':'need'}">${p.done}/${p.total}</span></div>
       <div class="bar" style="background:#eef0f6"><i style="width:${p.pct}%;background:${c.color}"></i></div>
 
-      <div class="sublabel" style="margin-top:12px">오늘 일정</div>
+      <div class="sublabel" style="margin-top:12px">오늘 일정 <em style="font-style:normal;font-weight:600">· 눌러서 출석 체크</em></div>
       ${items.length ? items.map(it => {
         const a = it.needs_pickup ? pickupOf(it,date) : null;
         const who = it.needs_pickup ? whoSpan(a) : '';
-        return `<div class="litem ${it.off?'off':''}">
+        // 학교·기타는 출석 체크 대상이 아니고, 휴강인 날은 체크할 게 없습니다
+        const can = checkable(it) && !it.off;
+        const on  = can && attDone(it,date);
+        const box = can ? (on ? '✅ ' : '⬜ ') : '';
+        return `<div class="litem ${it.off?'off':''} ${on?'done':''} ${can?'tap':''}"
+          ${can?`data-act="att" data-k="${it.kind}" data-v="${it.id}" data-d="${date}"`:''}>
           <span class="tm">${hm(it.starts_at)}~${hm(it.ends_at)}</span>
-          <span class="ttl">${emOf(it)} ${esc(it.title)}${it.off?' (휴강)':''}</span>${who}</div>`;
+          <span class="ttl">${box}${emOf(it)} ${esc(it.title)}${it.off?' (휴강)':''}</span>${who}</div>`;
       }).join('') : '<div class="note" style="text-align:left;padding:4px 0">일정 없음</div>'}
 
       <div class="splitline"></div>
