@@ -377,3 +377,33 @@ export function saveReward(){
     return r;
   }, '저장했어요');
 }
+
+/* ---------------- 아이: 갖고 싶은 보상 제안 ---------------- */
+export function sheetSuggest(){
+  setReopen(null);
+  openSheet('이런 보상 갖고 싶어요',
+    '엄마·아빠가 보고 몇 포인트로 할지 정해줄 거예요.', `
+    <label>아이콘</label><input id="sgEm" value="🎁" maxlength="4">
+    <label>무엇을 갖고 싶어?</label>
+    <input id="sgTitle" placeholder="예: 친구랑 놀이터에서 1시간 놀기">
+    <label>왜 갖고 싶은지 (안 써도 돼)</label>
+    <input id="sgNote" placeholder="예: 이번 주에 숙제를 다 했어요">
+    <button class="btn" style="margin-top:14px" data-act="savesuggest">보내기</button>`);
+}
+
+export function saveSuggest(){
+  const row = {
+    family_id: D.family.id,
+    child_id:  S.meId,
+    emoji: $('sgEm').value.trim() || '🎁',
+    title: $('sgTitle').value.trim(),
+    note:  $('sgNote').value.trim() || null,
+  };
+  if(!row.title) return toast('무엇을 갖고 싶은지 써 줘', true);
+
+  run(async () => {
+    const r = await sb.from('reward_suggestions').insert(row);
+    closeSheet(); setReopen(null);
+    return r;
+  }, '보냈어요! 엄마·아빠가 곧 확인할 거예요 🎁');
+}
