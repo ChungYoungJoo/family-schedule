@@ -23,6 +23,14 @@ import { bindEvents } from './actions.js';
 
 async function boot(){
   const hash = new URLSearchParams(location.hash.slice(1));
+
+  // 아이 링크를 한 번 열면 그 기기는 계속 아이 화면으로 뜹니다.
+  // 보호자 기기에서 실수로 열었을 때 #parent 로 되돌립니다.
+  if(hash.has('parent')){
+    localStorage.removeItem('kidToken');
+    history.replaceState(null, '', location.pathname);
+  }
+
   const fromHash = hash.get('kid');
   const token = fromHash || localStorage.getItem('kidToken');
 
