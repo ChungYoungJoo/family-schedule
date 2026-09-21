@@ -58,11 +58,22 @@ export const josa     = (w,a,b) => w + (((w.charCodeAt(w.length-1)-0xAC00)%28) ?
 // 이름을 끊어 읽는 구분자 (\s 가 못 잡는 폭 없는 공백·중점류까지 포함)
 const NAMESEP = /[\s​　·・‧•|/\\,]+/;
 
+/** 한글은 «시터» 처럼 조합된 형태(NFC)와 낱자로 풀린 형태(NFD)가 둘 다 존재합니다.
+ *  눈에는 똑같지만 그냥 비교하면 다른 문자열이라 중복 판정이 실패합니다. */
+const nfc = s => String(s ?? '').normalize('NFC').trim();
+
+/** 한 낱말이 그대로 두 번 이어 붙었으면 한 번으로 ('시터선생님시터선생님') */
+const halve = w => {
+  const h = w.length / 2;
+  return (Number.isInteger(h) && h > 1 && w.slice(0,h) === w.slice(h)) ? w.slice(0,h) : w;
+};
+
 /** 같은 말이 붙어서 두 번 나오면 한 번으로 줄입니다.
  *    '시터선생님 시터선생님' · '시터선생님시터선생님' · '선생님 시터선생님' → '시터선생님' */
 export function dedupeRepeat(s){
   const out = [];
-  for(const w of String(s ?? '').split(NAMESEP).filter(Boolean)){
+  for(const raw of nfc(s).split(NAMESEP).filter(Boolean)){
+    const w = halve(raw);
     const prev = out[out.length-1];
     if(prev && (prev.includes(w) || w.includes(prev))){
       if(w.length > prev.length) out[out.length-1] = w;   // 긴 쪽만 남김
@@ -70,15 +81,13 @@ export function dedupeRepeat(s){
     }
     out.push(w);
   }
-  const r = out.join(' ');
-  const h = r.length / 2;                                  // 구분자 없이 이어 붙은 경우
-  return (Number.isInteger(h) && h > 1 && r.slice(0,h) === r.slice(h)) ? r.slice(0,h) : r;
+  return out.join(' ');
 }
 
 export function fullNameOf(p){
   if(!p) return '';
-  const short = String(p.name || '').trim();
-  const long  = String(p.full_name || p.full || '').trim();
+  const short = nfc(p.name);
+  const long  = nfc(p.full_name || p.full);
   const nm = !long ? short : !short ? long
            : long.includes(short)  ? long
            : short.includes(long)  ? short
