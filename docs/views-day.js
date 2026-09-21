@@ -28,7 +28,7 @@ const todoRow = (t, date) => `
 const checkLine = (t, date) => {
   const on = taskDone(t, date);
   return `<div class="task" style="padding:5px 0;border:0" data-act="task" data-v="${t.id}" data-d="${date}">
-    <span style="font-size:13px">${on?'✅':'⬜'}</span>
+    <span class="mini ${on?'on':''}">${on?'✓':''}</span>
     <div class="tx"><b style="font-size:13.5px;font-weight:700;${
       on?'text-decoration:line-through;color:var(--ink-3)':''}">${esc(t.title)}</b></div></div>`;
 };
@@ -219,11 +219,11 @@ export function parentToday(){
         // 학교·기타는 출석 체크 대상이 아니고, 휴강인 날은 체크할 게 없습니다
         const can = checkable(it) && !it.off;
         const on  = can && attDone(it,date);
-        const box = can ? (on ? '✅ ' : '⬜ ') : '';
         return `<div class="litem ${it.off?'off':''} ${on?'done':''} ${can?'tap':''}"
           ${can?`data-act="att" data-k="${it.kind}" data-v="${it.id}" data-d="${date}"`:''}>
           <span class="tm">${hm(it.starts_at)}~${hm(it.ends_at)}</span>
-          <span class="ttl">${box}${emOf(it)} ${esc(it.title)}${it.off?' (휴강)':''}</span>${who}</div>`;
+          <span class="mini ${can?(on?'on':''):'ghost'}">${on?'✓':''}</span>
+          <span class="ttl">${emOf(it)} ${esc(it.title)}${it.off?' (휴강)':''}</span>${who}</div>`;
       }).join('') : '<div class="note" style="text-align:left;padding:4px 0">일정 없음</div>'}
 
       <div class="splitline"></div>
