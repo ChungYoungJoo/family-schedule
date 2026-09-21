@@ -3,7 +3,6 @@
 // =====================================================================
 import {
   D, S, CAT, HELPFUL, BUSY, esc, josa, hm, A, M, pickers,
-  fullNameOf, iconOf, dedupeRepeat,
   pickupOf, pickupRow, defaultPickup, statusOf,
 } from './core.js';
 
@@ -17,10 +16,9 @@ export function pickTag(it, date){
   if(a === 'self') return `<span class="tag self">🚶 끝나고 혼자 집으로 와요</span>`;
   const p = A(a);
   if(!p) return '';
-  const nm  = fullNameOf(p);
-  // 아이콘 + 이름을 한 덩어리로 놓고 한 번 더 중복을 걷어냅니다
-  const who = dedupeRepeat(`${iconOf(p.emoji)} ${nm}`);
-  return `<span class="tag ok">${esc(who)}${josa(nm,'이','가')} 데리러 와요</span>`;
+  const nm = p.full_name || p.full || p.name;
+  // josa() 가 이름까지 붙여서 돌려주므로 이름을 따로 또 넣으면 두 번 나옵니다
+  return `<span class="tag ok">${p.emoji} ${esc(josa(nm,'이','가'))} 데리러 와요</span>`;
 }
 
 /* 일정 한 칸 (칩) */
