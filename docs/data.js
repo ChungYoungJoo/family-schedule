@@ -37,7 +37,13 @@ export async function loadAll(){
     sb.from('redemptions').select('*').order('requested_at', {ascending:false}).limit(40),
     sb.from('notifications').select('*').order('created_at', {ascending:false}).limit(40),
     sb.from('point_ledger').select('child_id,delta,on_date,ref_type').gte('on_date', ledgerFrom),
+    sb.from('reward_suggestions').select('*').order('created_at', {ascending:false}).limit(40),
   ]);
+
+  // 보상 제안은 선택 기능입니다. 05_reward_suggestions.sql 을 아직 실행하지 않았어도
+  // 나머지 화면은 그대로 떠야 하므로 오류를 따로 걸러냅니다.
+  const sug = res.pop();
+  D.suggests = sug.error ? [] : (sug.data || []);
 
   const bad = res.find(r => r.error);
   if(bad) throw bad.error;
