@@ -147,7 +147,9 @@ main{flex:1; padding:14px 16px 96px}
 .mini{width:16px; height:16px; flex:none; border-radius:5px; border:2px solid #d3d7e6; background:#fff;
   display:grid; place-items:center; font-size:10px; font-weight:900; color:#fff; line-height:1}
 .mini.on{background:var(--ok); border-color:var(--ok)}
-.mini.ghost{visibility:hidden}   /* 체크 대상이 아닌 줄 — 자리만 맞춤 */
+/* 체크 대상이 아닌 줄(학교·기타 분류, 휴강)은 «–» 로 명시합니다.
+   빈칸으로 두면 «체크박스가 안 나온다» 와 구분이 안 됩니다 */
+.mini.na{border-color:transparent; color:var(--ink-3); font-size:12px}
 .task .mini{margin-top:2px}
 /* 완료는 ✅ 로만 구분합니다 — 취소선은 «휴강» 과 헷갈려서 쓰지 않습니다 */
 .litem.done .ttl{color:var(--ink-3)}
