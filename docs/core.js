@@ -76,6 +76,13 @@ export function fullNameOf(p){
   return out.join(' ') || short;
 }
 
+/** 아이콘 칸(emoji)에 이모지가 아니라 이름 같은 글자가 들어간 경우는 버립니다.
+ *  이름 옆에 아이콘으로 붙으면 «시터선생님 시터선생님이 …» 처럼 두 번 나오기 때문입니다. */
+export const iconOf = e => {
+  const s = String(e ?? '').trim();
+  return /[\p{L}\p{N}]/u.test(s) ? '' : s;
+};
+
 /* ---------------- Supabase 클라이언트 ---------------- */
 export let sb = null;
 export function setSb(client){ sb = client; }
