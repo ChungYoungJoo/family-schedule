@@ -3,7 +3,7 @@
 // =====================================================================
 import {
   D, S, CAT, HELPFUL, BUSY, esc, josa, hm, A, M, pickers,
-  pickupOf, pickupRow, defaultPickup, statusOf,
+  pickupOf, pickupRow, defaultPickup, statusOf, hasWeekly,
 } from './core.js';
 
 export const emOf = it => it.emoji || CAT[it.category].emoji;
@@ -32,7 +32,8 @@ export function itemChip(it, date){
 
 /* 어른들 일정 줄 */
 export function statusRow(date){
-  return D.members.filter(m => m.kind !== 'child').map(m => {
+  // 가끔 픽업만 도와주는 사람(요일 기본 일정 없음)은 여기 넣지 않습니다
+  return D.members.filter(m => m.kind !== 'child' && hasWeekly(m.id)).map(m => {
     const v = statusOf(m.id, date);
     const k = m.kind === 'helper'
       ? (v.startsWith('근무') ? 'help' : '')
@@ -55,7 +56,9 @@ export function slotRow(it, date){
     <div class="assign">${pickers().map(a => `
       <button class="abtn ${cur===a.id?'on':''}" style="${cur===a.id?`background:${a.color}`:''}"
         data-act="pick" data-k="${it.kind}" data-v="${it.id}" data-d="${date}" data-w="${a.id}"
-        >${a.emoji}<br>${esc(a.name)}</button>`).join('')}</div>
+        >${a.emoji}<br>${esc(a.name)}</button>`).join('')}
+      <button class="abtn add" data-act="newpicker" data-k="${it.kind}" data-v="${it.id}" data-d="${date}"
+        >＋<br>다른 사람</button></div>
     ${ov && !it.extra ? `<div class="ovrline"><span class="badge ovr">이 날만 변경됨</span>
       <span>요일 기본값: ${base && A(base) ? A(base).emoji + A(base).name : '미정'}</span>
       <button class="undo" data-act="pickreset" data-k="${it.kind}" data-v="${it.id}" data-d="${date}"
