@@ -131,7 +131,8 @@ export function manageView(){
       const days = [1,2,3,4,5,6,0].map(w => D.weekly[m.id+'|'+w] || '');
       const work = days.filter(v => v && v !== '휴무');
       const same = work.length && work.every(v => v === work[0]);
-      const summary = !work.length ? '전부 휴무'
+      const summary = !days.some(Boolean) ? '요일 기본 일정 없음 · 픽업 담당으로만'
+        : !work.length ? '전부 휴무'
         : same ? `${work.length}일 · ${work[0]}`
         : `${work.length}일 근무 · 요일마다 다름`;
       return `<div class="mrow" data-act="weeklyedit" data-v="${m.id}">
@@ -163,9 +164,11 @@ export function manageView(){
     <button class="ghost" data-act="newreward">＋ 보상 추가</button>
   </div>
 
-  <div class="sectitle"><h3>가족 구성원</h3></div>
+  <div class="sectitle"><h3>가족 구성원</h3><em>선생님·도우미는 눌러서 수정</em></div>
   <div class="card">
-    ${D.members.map(m => `<div class="mrow"><div class="ic" style="background:${m.color}22">${m.emoji}</div>
+    ${D.members.map(m => `<div class="mrow" ${
+        m.kind==='helper' ? `data-act="editmember" data-v="${m.id}"` : ''}>
+      <div class="ic" style="background:${m.color}22">${m.emoji}</div>
       <div class="mx"><b>${esc(m.name)}</b><span>${esc(m.descr||'')} · ${
         m.kind==='child' ? '아이 화면'
         : m.kind==='helper' ? '앱 계정 없음 · 픽업 담당으로만'
@@ -173,7 +176,11 @@ export function manageView(){
       ${m.kind==='child' ? `<button class="undo" data-act="kidlink" data-v="${m.id}">🔗 링크</button>` : ''}
       ${m.kind==='parent' ? '' : `<button class="del" data-act="delmember" data-v="${m.id}" data-w="${esc(m.name)}">🗑</button>`}
       </div>`).join('')}
-    <div class="note" style="text-align:left;padding:8px 2px 0">아이를 삭제하면 그 아이의 스케줄·숙제·포인트 기록도 함께 사라집니다.</div>
+    <button class="ghost" data-act="newmember">＋ 픽업 도와줄 사람 추가</button>
+    <div class="note" style="text-align:left;padding:8px 2px 0">
+      미술선생님·할머니처럼 가끔 데리러 오는 사람을 등록해 두면 담당 고를 때 같이 나옵니다.
+      아이를 삭제하면 그 아이의 스케줄·숙제·포인트 기록도 함께 사라집니다.
+    </div>
   </div>
 
   <div class="sectitle"><h3>포인트 규칙</h3></div>
