@@ -87,10 +87,11 @@ drop policy if exists k_suggestions_ins on reward_suggestions;
 create policy k_suggestions_ins on reward_suggestions for insert to anon
   with check (child_id = public.kid_id() and family_id = public.kid_family_id());
 
--- 아직 검토 전인 제안은 아이가 스스로 지울 수 있습니다
+-- 검토 전(pending) 이거나 거절된(rejected) 제안은 아이가 스스로 목록에서 지울 수 있습니다.
+-- 확정된(approved) 제안은 보상이 만들어졌으므로 기록으로 남깁니다.
 drop policy if exists k_suggestions_del on reward_suggestions;
 create policy k_suggestions_del on reward_suggestions for delete to anon
-  using (child_id = public.kid_id() and status = 'pending');
+  using (child_id = public.kid_id() and status in ('pending','rejected'));
 
 -- ---------------------------------------------------------------------
 -- 확정 / 거절 (보호자 전용)
