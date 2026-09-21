@@ -47,68 +47,10 @@ export const wdOf     = s => parseYmd(s).getDay();
 export const hm       = t => (t||'').slice(0,5);
 export const toMin    = t => +t.slice(0,2)*60 + +t.slice(3,5);
 export const esc      = s => String(s??'').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-// 받침 있으면 a, 없으면 b  (예: josa('엄마','이','가') → '엄마가', josa('소빈','아','야') → '소빈아')
+// 받침 있으면 a, 없으면 b.  ※ 조사만이 아니라 "이름+조사" 를 돌려줍니다.
+//   josa('엄마','이','가') → '엄마가'   josa('소빈','아','야') → '소빈아'
+//   그러니 `${name}${josa(name,…)}` 처럼 쓰면 이름이 두 번 나옵니다.
 export const josa     = (w,a,b) => w + (((w.charCodeAt(w.length-1)-0xAC00)%28) ? a : b);
-
-/** 문장에 쓸 이름. 짧은 이름(name)과 긴 이름(full_name) 중 하나만 고르고,
- *  같은 말이 겹쳐 들어간 경우 한 번만 남깁니다.
- *    '선생님' + '시터선생님'        → '시터선생님'
- *    '시터선생님 시터선생님'        → '시터선생님'
- *    '시터선생님 선생님'            → '시터선생님' */
-// 이름을 끊어 읽는 구분자 (\s 가 못 잡는 폭 없는 공백·중점류까지 포함)
-const NAMESEP = /[\s​　·・‧•|/\\,]+/;
-
-/** 한글은 «시터» 처럼 조합된 형태(NFC)와 낱자로 풀린 형태(NFD)가 둘 다 존재합니다.
- *  눈에는 똑같지만 그냥 비교하면 다른 문자열이라 중복 판정이 실패합니다. */
-const nfc = s => String(s ?? '').normalize('NFC').trim();
-
-// 화면에 아무것도 그리지 않는 서식 문자들. 이름 사이에 하나만 끼어 있어도
-// 글자 수가 어긋나 «시터선생님시터선생님» 같은 중복을 못 걸러냅니다.
-// (U+200D 는 이모지 조합에도 쓰이므로 이름에만 적용합니다)
-const INVISIBLE = /[­͏؜᠎​-‏‪-‮⁠-⁤﻿]/g;
-
-/** 이름 칸 정리 — 조합 형태를 맞추고 보이지 않는 문자를 걷어냅니다 */
-export const cleanName = s => nfc(s).replace(INVISIBLE, '').trim();
-
-/** 한 낱말이 그대로 두 번 이어 붙었으면 한 번으로 ('시터선생님시터선생님') */
-const halve = w => {
-  const h = w.length / 2;
-  return (Number.isInteger(h) && h > 1 && w.slice(0,h) === w.slice(h)) ? w.slice(0,h) : w;
-};
-
-/** 같은 말이 붙어서 두 번 나오면 한 번으로 줄입니다.
- *    '시터선생님 시터선생님' · '시터선생님시터선생님' · '선생님 시터선생님' → '시터선생님' */
-export function dedupeRepeat(s){
-  const out = [];
-  for(const raw of nfc(s).split(NAMESEP).filter(Boolean)){
-    const w = halve(raw);
-    const prev = out[out.length-1];
-    if(prev && (prev.includes(w) || w.includes(prev))){
-      if(w.length > prev.length) out[out.length-1] = w;   // 긴 쪽만 남김
-      continue;
-    }
-    out.push(w);
-  }
-  return out.join(' ');
-}
-
-export function fullNameOf(p){
-  if(!p) return '';
-  const short = cleanName(p.name);
-  const long  = cleanName(p.full_name || p.full);
-  const nm = !long ? short : !short ? long
-           : long.includes(short)  ? long
-           : short.includes(long)  ? short
-           : long;
-  return dedupeRepeat(nm) || short;
-}
-
-/** 아이콘 칸(emoji)에 이모지가 아니라 이름 같은 글자가 들어간 경우는 버립니다.
- *  이름 옆에 아이콘으로 붙으면 «시터선생님 시터선생님이 …» 처럼 두 번 나오기 때문입니다. */
-export const iconOf = e => {
-  const s = String(e ?? '').trim();
-  return /[\p{L}\p{N}]/u.test(s) ? '' : s;
-};
 
 /* ---------------- Supabase 클라이언트 ---------------- */
 export let sb = null;
