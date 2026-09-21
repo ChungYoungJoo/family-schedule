@@ -153,6 +153,9 @@ export function progress(cid, date){
 export function statusOf(mid, date){
   return D.dayst[mid+'|'+date] ?? D.weekly[mid+'|'+wdOf(date)] ?? '출근';
 }
+// 요일 기본 일정이 하나라도 등록된 사람인지.
+// 가끔 픽업만 도와주는 사람은 «어른들 일정» 줄에 넣지 않습니다.
+export const hasWeekly = mid => Object.keys(D.weekly).some(k => k.startsWith(mid + '|'));
 
 export const noteOn          = date => D.notes[date] || null;
 export const pendingRedeems  = () => D.redemptions.filter(r => r.status === 'pending');
