@@ -2,13 +2,20 @@
 //  views-day.js — 오늘 화면 (아이 / 보호자) + 포인트 상점
 // =====================================================================
 import {
-  D, S, WD, CAT, TODAY, TOMORROW, esc, josa, hm, toMin, mdLabel, wdOf,
+  D, S, WD, CAT, TODAY, TOMORROW, esc, josa, hm, toMin, mdLabel, wdOf, iconOf,
   me, kids, A, dayItems, homeworkOn, suppliesOn, taskDone, attDone, checkable,
   progress, noteOn, openOn, pendingRedeems, pendingSuggests, pickupOf, streakOf, weekStamps,
 } from './core.js';
 import { emOf, pickTag, statusRow, slotRow, redeemRow, suggestRow } from './views-common.js';
 
 const dateTitle = date => `${mdLabel(date).replace('/','월 ')}일 ${WD[wdOf(date)]}요일`;
+
+/* 픽업 담당 한 칸 — 아이콘 칸에 글자가 들어가 있으면 이름만 보여줍니다 */
+const whoSpan = a => {
+  const p = A(a);
+  if(!p) return `<span class="who miss">❗담당 미정</span>`;
+  return `<span class="who">${esc(iconOf(p.emoji))}${esc(p.name)}</span>`;
+};
 
 /* 체크 한 줄 (숙제 / 준비물 공통) */
 const todoRow = (t, date) => `
@@ -205,9 +212,7 @@ export function parentToday(){
       <div class="sublabel" style="margin-top:12px">오늘 일정</div>
       ${items.length ? items.map(it => {
         const a = it.needs_pickup ? pickupOf(it,date) : null;
-        const who = !it.needs_pickup ? ''
-          : a && A(a) ? `<span class="who">${A(a).emoji}${A(a).name}</span>`
-                      : `<span class="who miss">❗담당 미정</span>`;
+        const who = it.needs_pickup ? whoSpan(a) : '';
         return `<div class="litem ${it.off?'off':''}">
           <span class="tm">${hm(it.starts_at)}~${hm(it.ends_at)}</span>
           <span class="ttl">${emOf(it)} ${esc(it.title)}${it.off?' (휴강)':''}</span>${who}</div>`;
@@ -253,9 +258,7 @@ function tomorrowCard(){
       <div class="sublabel">${c.emoji} ${esc(c.name)}</div>
       ${items.map(it => {
         const a = it.needs_pickup ? pickupOf(it,date) : null;
-        const who = !it.needs_pickup ? ''
-          : a && A(a) ? `<span class="who">${A(a).emoji}${A(a).name}</span>`
-                      : `<span class="who miss">❗담당 미정</span>`;
+        const who = it.needs_pickup ? whoSpan(a) : '';
         return `<div class="litem"><span class="tm">${hm(it.starts_at)}~${hm(it.ends_at)}</span>
           <span class="ttl">${emOf(it)} ${esc(it.title)}</span>${who}</div>`;
       }).join('') || '<div class="litem"><span class="ttl" style="color:var(--ink-3)">일정 없음</span></div>'}
