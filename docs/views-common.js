@@ -2,7 +2,7 @@
 //  views-common.js — 여러 화면이 함께 쓰는 조각들
 // =====================================================================
 import {
-  D, S, CAT, HELPFUL, BUSY, esc, josa, hm, A, M, pickers,
+  D, S, CAT, HELPFUL, BUSY, esc, josa, hm, A, M, pickers, fullNameOf,
   pickupOf, pickupRow, defaultPickup, statusOf,
 } from './core.js';
 
@@ -16,8 +16,10 @@ export function pickTag(it, date){
   if(a === 'self') return `<span class="tag self">🚶 끝나고 혼자 집으로 와요</span>`;
   const p = A(a);
   if(!p) return '';
-  const nm = p.full_name || p.full || p.name;
-  return `<span class="tag ok">${p.emoji} ${esc(nm)}${josa(nm,'이','가')} 데리러 와요</span>`;
+  const nm = fullNameOf(p);
+  // 아이콘 자리에 이름과 같은 글자가 들어 있으면 이름만 한 번 보여줍니다
+  const em = p.emoji && !nm.includes(p.emoji) ? esc(p.emoji) + ' ' : '';
+  return `<span class="tag ok">${em}${esc(nm)}${josa(nm,'이','가')} 데리러 와요</span>`;
 }
 
 /* 일정 한 칸 (칩) */
@@ -72,6 +74,19 @@ export function redeemRow(r){
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
       <button class="abtn on" style="background:var(--ok)" data-act="redeemok" data-v="${r.id}">승인</button>
       <button class="abtn" data-act="redeemno" data-v="${r.id}">거절</button></div></div>`;
+}
+
+/* 아이가 제안한 보상 — 보호자가 포인트를 넣어 확정하는 줄 */
+export function suggestRow(s){
+  const c = M(s.child_id);
+  return `<div class="slot"><div class="info">
+      <b>${c?c.emoji:''} ${esc(c?c.name:'')} · ${esc(s.emoji||'🎁')} ${esc(s.title)}</b>
+      <span>${s.created_at.slice(5,10)}${s.note?` · “${esc(s.note)}”`:''}</span></div>
+    <div class="sgrow">
+      <input class="sgpt" id="sg${s.id}" type="number" min="1" step="10" value="100" inputmode="numeric">
+      <span class="sgp">P</span>
+      <button class="abtn on" style="background:var(--ok)" data-act="sugok" data-v="${s.id}">확정</button>
+      <button class="abtn" data-act="sugno" data-v="${s.id}">거절</button></div></div>`;
 }
 
 /* 주 이동 버튼 */
