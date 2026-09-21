@@ -71,7 +71,9 @@ prototype.html         초기 화면 시안 (앱과 무관, 업로드 안 됨)
 ## 권한
 
 - 보호자: Supabase 이메일 로그인 → 자기 가족 전체 읽기/쓰기
-- 아이: 로그인 없이 `#kid=<access_token>` 링크. 클라이언트가 `x-kid-token` 헤더를 붙이고,
+- 아이: 로그인 없이 `#kid=<access_token>` 링크. 토큰은 `localStorage.kidToken` 에 남아
+  그 기기는 계속 아이 화면으로 뜸 → 보호자 기기로 되돌릴 때는 `#parent` 로 접속
+- 아이: 클라이언트가 `x-kid-token` 헤더를 붙이고,
   RLS 가 `public.kid_id()` 로 본인 것만 통과시킴. 어른 일정은 아이에게 안 보임
 - `members.access_token` / `user_id` 는 anon 에게 컬럼 권한 자체가 없음
   → **아이 모드에서는 `select('*')` 금지**, 컬럼을 명시해야 함 (`data.js` 의 `memberCols`)
