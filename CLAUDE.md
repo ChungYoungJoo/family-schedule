@@ -36,8 +36,9 @@ docs/                  ← 배포되는 앱
   views-manage.js      manageView
   ui.js                render / paintHeader / 바텀시트 / 토스트 / 로그인 화면
   sync.js              refresh / run(쓰기 공통) / reopenFn
-  sheets.js            입력 폼 (스케줄, 숙제·준비물, 보상, 세트·기간, 요일 일괄)
-  sheets-day.js        입력 폼 (이 날만 변경, 공휴일·쉬는 날)   ← sheets.js 가 20KB 에 닿아 분리
+  sheets.js            입력 폼 (스케줄, 숙제·준비물, 보상, 세트·기간)
+  sheets-day.js        입력 폼 (이 날만 변경, 공휴일·쉬는 날)
+  sheets-adult.js      입력 폼 (어른 일정 — 그 날짜 / 요일별 기본)
   sheets-member.js     입력 폼 (픽업 도와줄 사람 추가·수정)
   actions.js           ACT 테이블 + data-act 이벤트 위임
   app.js               진입점 (boot)
@@ -63,7 +64,9 @@ prototype.html         초기 화면 시안 (앱과 무관, 업로드 안 됨)
    지정하면 그날 `routine_cancels` + `task_cancels` 를 한꺼번에 넣고,
    `dueCount()` 가 0을 돌려줘 **연속 달성 🔥 이 끊기지 않음**.
    `D.restDays` 는 과거 95일~미래 200일치를 따로 읽어옴 (연속 달성·관리 화면용).
-   **주말은 쉬는 날이 아님** — «매일» 숙제는 토·일에도 그대로 나와야 함 (사용자 요구)
+   **주말은 쉬는 날이 아님** — «매일» 숙제는 토·일에도 그대로 나와야 함 (사용자 요구).
+   어른 일정도 쉬는 날엔 `statusOf()` 가 «휴무» 를 기본으로 돌려줌.
+   그날 출근하는 사람은 `day_status` 로 덮어쓰면 됨 (날짜별 값이 항상 우선)
 3. **픽업 담당** — `routines.default_pickup_id`(요일 기본) 위에 `pickups`(날짜별) 덮어쓰기.
    후보는 `pickers()` = `can_pickup` 인 구성원 + 자율 귀가.
    가끔 오는 사람은 `kind='helper'` 로 추가하며(앱 계정 없음), 요일 기본 일정이
@@ -107,6 +110,9 @@ prototype.html         초기 화면 시안 (앱과 무관, 업로드 안 됨)
 ## 코드 관례
 
 - UI 문구는 전부 한국어, 존댓말. 아이 화면은 반말·쉬운 말
+- **고양이 테마** (아이들이 고양이를 좋아함). 크림색 바탕 + 생강고양이 색 포인트,
+  바탕에 옅은 발바닥 패턴(`body` background-image), 히어로/포인트 카드에 `.catwm` 고양이.
+  아이 화면은 🐾😻🐟 등 고양이 이모지, 보호자 화면은 색감만 맞추고 문구는 담백하게
 - 조사는 `josa(name,'이','가')` (받침 판별). 부르는 말도 `josa(name,'아','야')`.
   **`josa` 는 "이름+조사" 를 통째로 돌려줍니다.** `${name}${josa(name,…)}` 로 쓰면
   이름이 두 번 나옵니다 — 실제로 한 번 겪은 버그입니다
