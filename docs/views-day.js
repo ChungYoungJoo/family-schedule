@@ -65,7 +65,7 @@ export function kidToday(){
   const attPt = D.family?.attend_points ?? 20;
 
   const tl = items.length ? items.map(it => {
-    if(it.off) return `<div class="ev off" style="--dot:#c9cee0"><div class="t">${hm(it.starts_at)}</div>
+    if(it.off) return `<div class="ev off" style="--dot:#d9c3ad"><div class="t">${hm(it.starts_at)}</div>
       <div class="body"><b>${emOf(it)} ${esc(it.title)}</b><div><span class="tag off">오늘은 쉬어요</span></div></div>
       <div style="width:24px;flex:none"></div></div>`;
     const on = attDone(it, date), past = toMin(hm(it.ends_at)) < nowMin;
@@ -85,8 +85,7 @@ export function kidToday(){
   const rest  = isRest(date);          // 공휴일 등 통째로 쉬는 날
 
   return `
-  <div class="hero" style="background:linear-gradient(135deg,${c.color},${c.color}bb)">
-    <div class="catwm">${rest && !p.total ? '😽' : clear ? '😻' : '🐱'}</div>
+  <div class="hero" style="--kid:${c.color};background:linear-gradient(135deg,${c.color},${c.color}bb)">
     <div class="date">${dateTitle(date)}</div>
     <div class="hi">${esc(josa(c.name,'아','야'))}, ${
       rest && !p.total ? '오늘은 쉬는 날! 뒹굴뒹굴 하자 🐾'
@@ -151,7 +150,7 @@ export function shopView(){
 
   return `
   <div class="ptcard">
-    <div class="catwm">${catFace}</div>
+    <div class="catpeek">${catFace}</div>
     <div class="lbl">${esc(c.name)}의 포인트</div>
     <div class="val">${bal}<small>P</small></div>
     <div class="meta"><span>이번 주 +${D.weekEarned[c.id] ?? 0}P</span>
@@ -221,9 +220,9 @@ export function parentToday(){
         ${streak>0?`<span class="badge" style="background:#fff0e6;color:#d9480f">🔥 ${streak}일</span>`:''}
         <span class="badge" style="background:var(--gold-soft);color:#b07400">⭐ ${D.balances[c.id]??0}P</span>
         ${p.total ? `<span class="badge ${p.done===p.total?'done':'need'}">${p.done}/${p.total}</span>`
-                  : `<span class="badge" style="background:#f1f3f9;color:var(--ink-3)">${
+                  : `<span class="badge" style="background:#f7ece1;color:var(--ink-3)">${
                       isRest(date) ? '🎌 쉬는 날' : '할 일 없음'}</span>`}</div>
-      <div class="bar" style="background:#eef0f6"><i style="width:${p.pct}%;background:${c.color}"></i></div>
+      <div class="bar" style="background:#f5e8da"><i style="width:${p.pct}%;background:${c.color}"></i></div>
 
       <div class="sublabel" style="margin-top:12px">오늘 일정 <em style="font-style:normal;font-weight:600">· 눌러서 출석 체크</em></div>
       ${items.length ? items.map(it => {
