@@ -7,11 +7,12 @@ import {
 } from './core.js';
 import { $, render, openSheet, closeSheet, toast } from './ui.js';
 import { run, refresh, setReopen, reopenFn } from './sync.js';
-import { sheetEditDay, sheetRoutine, saveRoutine, sheetTask, saveTask,
+import { sheetRoutine, saveRoutine, sheetTask, saveTask,
          sheetReward, saveReward, sheetWeekly, saveWeeklyAll,
          sheetSet, saveSet, sheetPeriod, savePeriod,
          sheetSuggest, saveSuggest } from './sheets.js';
 import { sheetMember, saveMember } from './sheets-member.js';
+import { sheetEditDay, sheetRest, saveRest, removeRest } from './sheets-day.js';
 
 /* 하루 전부 완료 보너스 — 서버가 실제 완료 여부를 다시 검증합니다 */
 async function maybeBonus(childId, date){
@@ -155,10 +156,36 @@ export const ACT = {
         .map(x => ({ family_id:x.family_id, routine_id:x.id, on_date:d, reason:n.label }));
       if(rows.length) await sb.from('routine_cancels').upsert(rows, { onConflict:'routine_id,on_date' });
     }
+    // 통째로 쉬는 날은 숙제·준비물도 함께 쉽니다
+    if(n.rest){
+      const sid = setIdFor(d), wd = wdOf(d);
+      const rows = D.tasks
+        .filter(x => x.set_id===sid && !x.archived
+          && (x.weekdays === null || (x.weekdays||[]).includes(wd)))
+        .map(x => ({ family_id:x.family_id, task_id:x.id, on_date:d, reason:n.label }));
+      if(rows.length) await sb.from('task_cancels').upsert(rows, { onConflict:'task_id,on_date' });
+    }
     return r;
   }, '하루 표시를 저장했어요'),
 
-  delnote: ({d}) => run(() => sb.from('date_notes').delete().eq('on_date',d), '하루 표시를 지웠어요'),
+  // 표시를 지우면 그 표시 때문에 걸어둔 취소도 함께 풉니다
+  delnote: ({d}) => run(async () => {
+    const n = DAY_NOTES.find(x => x.key === D.notes[d]?.note_key);
+    if(n && n.cancels !== 'none'){
+      const a = await sb.from('routine_cancels').delete().eq('on_date',d); if(a.error) return a;
+    }
+    if(n && n.rest){
+      const b = await sb.from('task_cancels').delete().eq('on_date',d);    if(b.error) return b;
+    }
+    return sb.from('date_notes').delete().eq('on_date',d);
+  }, '하루 표시를 지웠어요'),
+
+  // 숙제·준비물을 그날만 쉬기 / 되살리기
+  canceltask: ({v,d}) => run(() => {
+    const t = D.tasks.find(x => x.id === v);
+    if(D.taskCancels.has(v+'|'+d)) return sb.from('task_cancels').delete().eq('task_id',v).eq('on_date',d);
+    return sb.from('task_cancels').insert({ family_id:t.family_id, task_id:v, on_date:d });
+  }),
 
   cancel: ({v,d}) => run(() => {
     const r = D.routines.find(x => x.id === v);
@@ -297,6 +324,11 @@ export const ACT = {
       const r = await sb.from('rewards').update({archived:true}).eq('id',v);
       closeSheet(); setReopen(null); return r; }, '삭제했어요');
   },
+
+  /* ---- 공휴일·쉬는 날 ---- */
+  newrest:  () => sheetRest(),
+  saverest: () => saveRest(),
+  delrest:  ({v,w}) => { const [from,to] = v.split('~'); removeRest(from, to, w || '이 기간'); },
 
   /* ---- 픽업 도와줄 사람 ---- */
   newmember:  () => sheetMember(null),
