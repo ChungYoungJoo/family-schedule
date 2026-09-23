@@ -19,12 +19,16 @@ export const SITTER_TYPES = ['근무 09:00~18:00','근무 12:00~18:00','근무 1
 export const HELPFUL = {'정시 퇴근':1,'조기 퇴근':1,'반차':1,'휴가':1,'재택':1,'교육(재택)':1,'휴무':1};
 export const BUSY    = {'야근':1,'교육(출근)':1};
 
+// rest:true = 숙제·준비물까지 쉬고, 연속 달성 🔥 도 끊기지 않는 날
 export const DAY_NOTES = [
+  {key:'holiday',em:'🎌', label:'공휴일·쉬는 날',  cancels:'all',    rest:true},
   {key:'closed', em:'🏫', label:'재량휴업일',      cancels:'school'},
   {key:'field',  em:'🚌', label:'현장학습',        cancels:'none'},
-  {key:'sick',   em:'🤒', label:'아파서 쉬는 날',  cancels:'all'},
+  {key:'sick',   em:'🤒', label:'아파서 쉬는 날',  cancels:'all',    rest:true},
   {key:'family', em:'🎉', label:'가족 일정',       cancels:'none'},
 ];
+export const REST_KEYS = new Set(DAY_NOTES.filter(n => n.rest).map(n => n.key));
+export const noteDef   = key => DAY_NOTES.find(n => n.key === key) || null;
 
 export const PRESETS = [
   {em:'🏥', title:'병원 진료',     s:'15:30', e:'16:30', cat:'etc',     pickup:true},
@@ -59,7 +63,8 @@ export function setSb(client){ sb = client; }
 /* ---------------- 전역 상태 ---------------- */
 export const D = {                 // 서버에서 읽어온 데이터
   family:null, members:[], sets:[], periods:[], routines:[], tasks:[],
-  notes:{}, cancels:new Set(), extras:[], pickups:{},
+  notes:{}, cancels:new Set(), taskCancels:new Set(), extras:[], pickups:{},
+  restDays:new Set(), restList:[],   // 쉬는 날 (연속 달성 계산·관리 화면용, 넓은 기간)
   weekly:{}, dayst:{}, taskLogs:new Set(), attLogs:new Set(),
   balances:{}, weekEarned:{}, bonusDates:{},   // bonusDates[childId] = Set('YYYY-MM-DD')
   rewards:[], redemptions:[], suggests:[], notis:[],
@@ -127,13 +132,16 @@ export const defaultPickup = it =>
 export const slotsOn = date => kids().flatMap(c => liveItems(c.id,date)).filter(x => x.needs_pickup);
 export const openOn  = date => slotsOn(date).filter(x => !pickupOf(x,date));
 
-export const tasksOn = (cid,date) => {
+// 그 날짜의 숙제·준비물 (그날만 쉬기로 한 것은 off 로 표시)
+export function dayTasks(cid, date){
   const sid = setIdFor(date), wd = wdOf(date);
   return D.tasks
     .filter(t => t.set_id===sid && t.child_id===cid && !t.archived
       && (t.weekdays === null || (t.weekdays||[]).includes(wd)))
+    .map(t => ({ ...t, off: D.taskCancels.has(t.id+'|'+date) }))
     .sort((a,b) => a.sort_order - b.sort_order);
-};
+}
+export const tasksOn = (cid,date) => dayTasks(cid,date).filter(t => !t.off);
 
 // 숙제와 준비물을 나눠 보고 싶을 때
 export const homeworkOn = (cid,date) => tasksOn(cid,date).filter(t => (t.kind||'homework') === 'homework');
@@ -158,12 +166,27 @@ export function statusOf(mid, date){
 export const hasWeekly = mid => Object.keys(D.weekly).some(k => k.startsWith(mid + '|'));
 
 export const noteOn          = date => D.notes[date] || null;
+// 학교·학원·숙제를 통째로 쉬는 날 (공휴일, 아파서 쉬는 날)
+export const isRest          = date => D.restDays.has(date);
+
+/** 앞으로의 쉬는 날을 연속된 기간끼리 묶습니다 (관리 화면용) */
+export function restGroups(){
+  const groups = [];
+  (D.restList || []).filter(n => n.on_date >= TODAY).forEach(n => {
+    const g = groups[groups.length-1];
+    if(g && g.label === n.label && ymd(addDays(parseYmd(g.to), 1)) === n.on_date){ g.to = n.on_date; return; }
+    groups.push({ label:n.label, emoji:n.emoji || '🎌', from:n.on_date, to:n.on_date });
+  });
+  return groups;
+}
+export const restRange = g => `${mdLabel(g.from)}${g.from === g.to ? '' : ` ~ ${mdLabel(g.to)}`}`;
 export const pendingRedeems  = () => D.redemptions.filter(r => r.status === 'pending');
 export const pendingSuggests = () => D.suggests.filter(s => s.status === 'pending');
 
 /* ---------------- 연속 달성 ---------------- */
 // 그날 할 일이 하나라도 있었는지 (지난 날짜는 취소·추가 예외를 빼고 대략만 계산)
 function dueCount(cid, date){
+  if(D.restDays.has(date)) return 0;   // 쉬는 날은 할 일이 없던 날로 봅니다
   const sid = setIdFor(date), wd = wdOf(date);
   const t = D.tasks.filter(x => x.set_id===sid && x.child_id===cid && !x.archived
     && (x.weekdays === null || (x.weekdays||[]).includes(wd))).length;
@@ -175,7 +198,8 @@ function dueCount(cid, date){
 const gotBonus = (cid, date) => !!D.bonusDates[cid]?.has(date);
 
 /** 오늘(또는 어제)부터 거슬러 올라가며 "다 한 날"이 며칠 이어졌는지.
- *  할 일이 없던 날(주말 등)은 끊지 않고 건너뜁니다. */
+ *  할 일이 없던 날(주말·공휴일 등)은 끊지 않고 건너뜁니다.
+ *  주말이라도 «매일» 숙제가 있으면 할 일이 있는 날이므로 그대로 셉니다. */
 export function streakOf(cid){
   let d = parseYmd(TODAY);
   // 오늘은 아직 진행 중일 수 있으니, 아직 못 받았으면 어제부터 셉니다
@@ -197,6 +221,7 @@ export function weekStamps(cid){
     date,
     due:  dueCount(cid, date) > 0,
     done: gotBonus(cid, date),
+    rest: D.restDays.has(date),
     future: date > TODAY,
   }));
 }
