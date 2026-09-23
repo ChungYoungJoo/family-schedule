@@ -1,7 +1,7 @@
 // =====================================================================
 //  ui.js — 화면 그리기 / 바텀시트 / 토스트 / 로그인·오류 화면
 // =====================================================================
-import { sb, D, S, esc, isKid, me, setNameFor, TODAY } from './core.js';
+import { sb, D, S, esc, isKid, me, setNameFor, avatarOf, TODAY } from './core.js';
 import { kidToday, shopView, parentToday } from './views-day.js';
 import { weekView, familyView } from './views-week.js';
 import { manageView } from './views-manage.js';
@@ -40,7 +40,7 @@ export function paintHeader(){
         isKid() ? '오늘 할 일 확인하자!' : '가족 스케줄 · 숙제 보드'}</small></div>
       <div class="bell" data-act="notis">🔔${unread?`<b>${unread}</b>`:''}</div>
       ${u ? `<div class="who" ${isKid()?'':'data-act="who"'}>
-        <span class="av" style="background:${u.color}22">${u.emoji}</span>${esc(u.name)}${
+        <span class="av" style="background:${u.color}22">${avatarOf(u)}</span>${esc(u.name)}${
           isKid()?'':'<span class="chev">▼</span>'}</div>` : ''}
     </div>
     ${S.syncing ? '<div class="syncing"></div>' : ''}`;
