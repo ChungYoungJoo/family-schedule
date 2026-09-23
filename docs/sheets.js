@@ -1,54 +1,13 @@
 // =====================================================================
-//  sheets.js — 입력 폼 바텀시트 (이 날만 변경 / 스케줄 / 숙제 / 보상)
+//  sheets.js — 입력 폼 바텀시트 (스케줄 / 숙제·준비물 / 세트·기간 / 요일 일괄 / 보상)
+//  날짜별 예외(이 날만 변경·쉬는 날)는 sheets-day.js 에 있습니다.
 // =====================================================================
 import {
-  sb, D, S, WD, CAT, DAY_NOTES, PRESETS, STATUS_TYPES,
-  esc, hm, toMin, mdLabel, wdOf, M, kids, pickers, noteOn, setIdFor, weekDays,
+  sb, D, S, WD, CAT, STATUS_TYPES,
+  esc, hm, M, pickers, weekDays,
 } from './core.js';
 import { $, openSheet, closeSheet, toast } from './ui.js';
 import { run, setReopen } from './sync.js';
-
-/* ---------------- 이 날만 변경 ---------------- */
-export function sheetEditDay(date){
-  const nt = noteOn(date), sid = setIdFor(date), wd = wdOf(date);
-  const rows = kids().flatMap(c => D.routines
-    .filter(r => r.set_id===sid && r.child_id===c.id && r.weekday===wd)
-    .sort((a,b) => toMin(a.starts_at) - toMin(b.starts_at))
-    .map(r => ({r,c})));
-  const adds = D.extras.filter(e => e.on_date === date);
-
-  openSheet(`${mdLabel(date)} (${WD[wd]})`,
-    '이 날짜에만 적용됩니다. 요일 반복 시간표는 그대로 유지돼요.', `
-    <h4>하루 표시</h4>
-    <div class="opt-grid">
-      ${DAY_NOTES.map(n => `<div class="opt ${nt && nt.note_key===n.key ? 'sel':''}"
-        data-act="setnote" data-v="${n.key}" data-d="${date}">${n.em} ${n.label}</div>`).join('')}
-      ${nt ? `<div class="opt warn" data-act="delnote" data-d="${date}">↺ 표시 지우기</div>` : ''}
-    </div>
-
-    <h4>일정 취소 / 되살리기</h4>
-    ${rows.length ? rows.map(({r,c}) => {
-      const off = D.cancels.has(r.id+'|'+date);
-      return `<div class="mrow"><div class="ic" style="background:${c.color}22">${c.emoji}</div>
-        <div class="mx"><b style="${off?'text-decoration:line-through;color:var(--ink-3)':''}">${esc(r.title)}</b>
-          <span>${esc(c.name)} · ${hm(r.starts_at)}~${hm(r.ends_at)}</span></div>
-        <button class="abtn ${off?'on':''}" style="${off?'background:var(--danger)':''};width:70px"
-          data-act="cancel" data-v="${r.id}" data-d="${date}">${off?'되살리기':'취소'}</button></div>`;
-    }).join('') : '<div class="note" style="padding:6px">이 날 반복 일정이 없습니다</div>'}
-
-    <h4>이 날만 일정 추가</h4>
-    <div class="seg">${kids().map(c => `<button class="${S.ovrChild===c.id?'on':''}"
-      data-act="ovrchild" data-v="${c.id}">${c.emoji} ${c.name}</button>`).join('')}</div>
-    <div class="opt-grid">${PRESETS.map((p,i) =>
-      `<div class="opt" data-act="addpreset" data-v="${i}" data-d="${date}">${p.em} ${p.title}
-        <br><span style="font-size:11px;color:var(--ink-3);font-weight:600">${p.s}~${p.e}</span></div>`).join('')}</div>
-
-    ${adds.length ? `<h4>이 날 추가된 일정</h4>${adds.map(a => `
-      <div class="mrow"><div class="ic">${a.emoji}</div>
-        <div class="mx"><b>${esc(a.title)}</b>
-          <span>${esc(M(a.child_id)?.name||'')} · ${hm(a.starts_at)}~${hm(a.ends_at)}</span></div>
-        <button class="undo" data-act="delextra" data-v="${a.id}">↺ 삭제</button></div>`).join('')}` : ''}`);
-}
 
 /* ---------------- 반복 스케줄 ---------------- */
 let editing = null;
