@@ -4,7 +4,7 @@
 import {
   D, S, WD, CAT, TODAY, TOMORROW, esc, josa, hm, toMin, mdLabel, wdOf,
   me, kids, A, dayItems, homeworkOn, suppliesOn, taskDone, attDone, checkable,
-  progress, noteOn, openOn, pendingRedeems, pendingSuggests, pickupOf, streakOf, weekStamps, isRest,
+  progress, noteOn, openOn, pendingRedeems, pendingSuggests, pickupOf, streakOf, weekStamps, isRest, avatarOf,
 } from './core.js';
 import { emOf, pickTag, statusRow, slotRow, redeemRow, suggestRow } from './views-common.js';
 
@@ -214,7 +214,7 @@ export function parentToday(){
     const streak = streakOf(c.id);
     return `<div class="card">
       <div style="display:flex;align-items:center;gap:9px;margin-bottom:10px">
-        <span style="width:32px;height:32px;border-radius:50%;background:${c.color}22;display:grid;place-items:center;font-size:18px">${c.emoji}</span>
+        <span style="width:32px;height:32px;border-radius:50%;background:${c.color}22;display:grid;place-items:center;font-size:18px">${avatarOf(c)}</span>
         <div style="flex:1"><b style="font-size:15px">${esc(c.name)}</b>
           <span style="font-size:11.5px;color:var(--ink-3);font-weight:600"> · ${esc(c.descr||'')}</span></div>
         ${streak>0?`<span class="badge" style="background:#fff0e6;color:#d9480f">🔥 ${streak}일</span>`:''}
@@ -275,7 +275,7 @@ function tomorrowCard(){
     const hwN = homeworkOn(c.id, date).length;
     if(!items.length && !sup.length && !hwN) return '';
     return `<div style="margin-top:12px">
-      <div class="sublabel">${c.emoji} ${esc(c.name)}</div>
+      <div class="sublabel">${avatarOf(c)} ${esc(c.name)}</div>
       ${items.map(it => {
         const a = it.needs_pickup ? pickupOf(it,date) : null;
         const who = it.needs_pickup ? whoSpan(a) : '';
