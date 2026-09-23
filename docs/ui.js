@@ -36,8 +36,8 @@ export function paintHeader(){
   const unread = D.notis.filter(n => !n.read_at).length;
   el.innerHTML = `
     <div class="brandrow">
-      <div class="brand">우리집 하루<small>${esc(setNameFor(TODAY))} · ${
-        isKid() ? '오늘 할 일을 확인해요' : '가족 스케줄 · 숙제 보드'}</small></div>
+      <div class="brand">우리집 하루 🐾<small>${esc(setNameFor(TODAY))} · ${
+        isKid() ? '오늘 할 일 확인하자!' : '가족 스케줄 · 숙제 보드'}</small></div>
       <div class="bell" data-act="notis">🔔${unread?`<b>${unread}</b>`:''}</div>
       ${u ? `<div class="who" ${isKid()?'':'data-act="who"'}>
         <span class="av" style="background:${u.color}22">${u.emoji}</span>${esc(u.name)}${
@@ -49,7 +49,7 @@ export function paintHeader(){
 /* ---------------- 전체 렌더 ---------------- */
 export function render(){
   const tabs = isKid()
-    ? [['today','🏠','오늘'],['week','🗓','내 주간'],['shop','🎁','포인트 상점']]
+    ? [['today','🐱','오늘'],['week','🗓','내 주간'],['shop','🐾','포인트 상점']]
     : [['today','🏠','오늘'],['week','🗓','주간'],['family','🤝','가족일정'],['manage','⚙️','관리']];
   if(!tabs.some(t => t[0] === S.tab)) S.tab = 'today';
 
@@ -76,7 +76,7 @@ export function render(){
 export function screenLogin(err){
   $('root').innerHTML = `
     <div class="center">
-      <div class="logo">🏠</div>
+      <div class="logo">🐱</div>
       <h1>우리집 하루</h1>
       <p>보호자 계정으로 로그인해 주세요.<br>아이는 전용 링크로 바로 들어옵니다.</p>
       <form class="loginbox" id="lf">
@@ -101,7 +101,7 @@ export function screenLogin(err){
 
 export function screenError(title, msg){
   $('root').innerHTML = `
-    <div class="center"><div class="logo">😥</div><h1>${esc(title)}</h1>
+    <div class="center"><div class="logo">🙀</div><h1>${esc(title)}</h1>
       <p>${esc(msg)}</p>
       <button class="btn" onclick="location.reload()">다시 시도</button></div>`;
 }
