@@ -1,7 +1,8 @@
 // =====================================================================
 //  data.js — 서버에서 한 번에 읽어오기
 // =====================================================================
-import { sb, D, S, isKid, kids, weekDays, setIdFor, TODAY, TOMORROW, ymd, parseYmd, addDays } from './core.js';
+import { sb, D, S, isKid, kids, weekDays, setIdFor, REST_KEYS,
+         TODAY, TOMORROW, ymd, parseYmd, addDays } from './core.js';
 
 export async function loadAll(){
   const days = weekDays();
@@ -11,6 +12,8 @@ export async function loadAll(){
   const inWin = q => q.gte('on_date', from).lte('on_date', to);
   // 연속 달성 계산용 (최근 90일 보너스 기록)
   const ledgerFrom = ymd(addDays(parseYmd(TODAY), -95));
+  // 쉬는 날은 연속 달성(과거)과 관리 화면(미래)에 둘 다 필요해서 넓게 읽습니다
+  const restTo = ymd(addDays(parseYmd(TODAY), 200));
 
   // 아이 클라이언트에는 access_token / user_id 컬럼 권한이 없으므로 컬럼을 명시합니다.
   const memberCols = isKid()
@@ -37,13 +40,23 @@ export async function loadAll(){
     sb.from('redemptions').select('*').order('requested_at', {ascending:false}).limit(40),
     sb.from('notifications').select('*').order('created_at', {ascending:false}).limit(40),
     sb.from('point_ledger').select('child_id,delta,on_date,ref_type').gte('on_date', ledgerFrom),
+    sb.from('date_notes').select('on_date,note_key,emoji,label').gte('on_date', ledgerFrom).lte('on_date', restTo),
+    // ↓ 아래 둘은 선택 테이블입니다 (05·06 SQL 미실행 상태에서도 앱은 떠야 하므로 따로 처리)
     sb.from('reward_suggestions').select('*').order('created_at', {ascending:false}).limit(40),
+    inWin(sb.from('task_cancels').select('*')),
   ]);
 
-  // 보상 제안은 선택 기능입니다. 05_reward_suggestions.sql 을 아직 실행하지 않았어도
-  // 나머지 화면은 그대로 떠야 하므로 오류를 따로 걸러냅니다.
-  const sug = res.pop();
-  D.suggests = sug.error ? [] : (sug.data || []);
+  // 붙인 역순으로 꺼냅니다 (task_cancels → reward_suggestions → date_notes 넓은 범위)
+  const tcan  = res.pop();
+  const sug   = res.pop();
+  const rest  = res.pop();
+
+  D.taskCancels = new Set(tcan.error ? [] : (tcan.data||[]).map(c => c.task_id+'|'+c.on_date));
+  D.suggests    = sug.error ? [] : (sug.data || []);
+
+  const restRows = (rest.error ? [] : (rest.data||[])).filter(n => REST_KEYS.has(n.note_key));
+  D.restDays = new Set(restRows.map(n => n.on_date));
+  D.restList = restRows.sort((a,b) => a.on_date < b.on_date ? -1 : 1);
 
   const bad = res.find(r => r.error);
   if(bad) throw bad.error;
