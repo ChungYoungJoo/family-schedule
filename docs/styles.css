@@ -241,6 +241,8 @@ main{flex:1; padding:14px 16px 96px}
 
 .ptcard{position:relative; border-radius:22px; padding:18px; color:#fff; margin:22px 0 4px;
   background:linear-gradient(135deg,#f59f00,#ef7a2b); box-shadow:0 10px 24px rgba(239,122,43,.3)}
+/* 아이 고양이 아바타 — 이모지가 있던 자리에 그대로 들어가도록 1em 크기 */
+.catav{width:1.15em; height:1.15em; vertical-align:-.24em; display:inline-block; flex:none}
 /* 카드 위로 빼꼼 내다보는 고양이 */
 .catpeek{position:absolute; right:16px; top:-22px; font-size:42px; line-height:1; pointer-events:none;
   filter:drop-shadow(0 3px 4px rgba(80,55,35,.3))}
