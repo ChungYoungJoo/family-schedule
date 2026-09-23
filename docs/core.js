@@ -56,6 +56,45 @@ export const esc      = s => String(s??'').replace(/[&<>"]/g, c => ({'&':'&amp;'
 //   그러니 `${name}${josa(name,…)}` 처럼 쓰면 이름이 두 번 나옵니다.
 export const josa     = (w,a,b) => w + (((w.charCodeAt(w.length-1)-0xAC00)%28) ? a : b);
 
+/* ---------------- 고양이 아바타 ----------------
+ *  이모지로는 «치즈냥 / 회색냥» 을 구분할 수 없어서 작은 그림을 직접 그립니다.
+ *  members.emoji 에 'cat:cheese' 또는 'cat:grey' 를 넣으면 이 그림이 나옵니다.
+ *  그림은 1em 크기라서 이모지가 있던 자리에 그대로 들어갑니다.            */
+const CAT_STYLES = {
+  cheese:{fur:'#f0a441', dark:'#cf7a22', face:'#fff1db', ear:'#f3b3a4'},  // 치즈냥
+  grey:  {fur:'#a7b3bd', dark:'#84919d', face:'#ffffff', ear:'#eeb9b0'},  // 회색·흰색냥
+};
+const catKey = m => {
+  const e = String(m?.emoji || '');
+  const k = e.startsWith('cat:') ? e.slice(4) : '';
+  return CAT_STYLES[k] ? k : null;
+};
+
+/** 글자만 넣을 수 있는 자리(시트 제목 등)에서 쓸 대체 이모지 */
+export const emojiOf = m => catKey(m) ? '🐱' : (m?.emoji || '');
+
+/** HTML 자리용 — 고양이면 그림, 아니면 원래 이모지 그대로 */
+export function avatarOf(m){
+  const k = catKey(m);
+  if(!k) return m?.emoji || '';
+  const s = CAT_STYLES[k];
+  return `<svg class="catav" viewBox="0 0 32 32" aria-hidden="true">`
+    + `<path d="M6.5 13 8 4l7 5.2z" fill="${s.fur}"/>`
+    + `<path d="M25.5 13 24 4l-7 5.2z" fill="${s.fur}"/>`
+    + `<path d="M9 11.6 9.9 6.8l3.5 2.6z" fill="${s.ear}"/>`
+    + `<path d="M23 11.6 22.1 6.8l-3.5 2.6z" fill="${s.ear}"/>`
+    + `<ellipse cx="16" cy="18.4" rx="11" ry="9.4" fill="${s.fur}"/>`
+    + `<path d="M16 9.4v4.4M11.4 10.8l1.5 3.6M20.6 10.8l-1.5 3.6" stroke="${s.dark}"`
+    + ` stroke-width="1.7" stroke-linecap="round" fill="none"/>`
+    + `<ellipse cx="16" cy="21.8" rx="7.1" ry="5.1" fill="${s.face}"/>`
+    + `<ellipse cx="11.9" cy="17.4" rx="1.7" ry="2.2" fill="#3b2f28"/>`
+    + `<ellipse cx="20.1" cy="17.4" rx="1.7" ry="2.2" fill="#3b2f28"/>`
+    + `<path d="M16 20.4l-1.5 1.2h3z" fill="#e2857e"/>`
+    + `<path d="M16 21.8v1.1M16 22.9c-1.2 0-1.9-.7-1.9-1.5M16 22.9c1.2 0 1.9-.7 1.9-1.5"`
+    + ` stroke="#3b2f28" stroke-width="1" stroke-linecap="round" fill="none"/>`
+    + `</svg>`;
+}
+
 /* ---------------- Supabase 클라이언트 ---------------- */
 export let sb = null;
 export function setSb(client){ sb = client; }
