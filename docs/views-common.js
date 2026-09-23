@@ -3,7 +3,7 @@
 // =====================================================================
 import {
   D, S, CAT, HELPFUL, BUSY, esc, josa, hm, A, M, pickers,
-  pickupOf, pickupRow, defaultPickup, statusOf, hasWeekly,
+  pickupOf, pickupRow, defaultPickup, statusOf, hasWeekly, avatarOf,
 } from './core.js';
 
 export const emOf = it => it.emoji || CAT[it.category].emoji;
@@ -71,7 +71,7 @@ export function redeemRow(r){
   const c = M(r.child_id);
   const w = D.rewards.find(x => x.id === r.reward_id);
   return `<div class="slot"><div class="info">
-      <b>${c?c.emoji:''} ${esc(c?c.name:'')} · ${w?w.emoji:'🎁'} ${esc(w?w.title:'보상')}</b>
+      <b>${c?avatarOf(c):""} ${esc(c?c.name:'')} · ${w?w.emoji:'🎁'} ${esc(w?w.title:'보상')}</b>
       <span>${r.cost}P · ${r.requested_at.slice(5,10)}</span></div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
       <button class="abtn on" style="background:var(--ok)" data-act="redeemok" data-v="${r.id}">승인</button>
@@ -82,7 +82,7 @@ export function redeemRow(r){
 export function suggestRow(s){
   const c = M(s.child_id);
   return `<div class="slot"><div class="info">
-      <b>${c?c.emoji:''} ${esc(c?c.name:'')} · ${esc(s.emoji||'🎁')} ${esc(s.title)}</b>
+      <b>${c?avatarOf(c):""} ${esc(c?c.name:'')} · ${esc(s.emoji||'🎁')} ${esc(s.title)}</b>
       <span>${s.created_at.slice(5,10)}${s.note?` · “${esc(s.note)}”`:''}</span></div>
     <div class="sgrow">
       <label class="sgin"><input id="sg${s.id}" type="number" min="1" step="10"
