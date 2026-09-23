@@ -11,7 +11,7 @@
 import {
   sb, D, S, WD, DAY_NOTES, PRESETS, TODAY,
   esc, josa, hm, toMin, mdLabel, wdOf, ymd, parseYmd, addDays,
-  M, kids, noteOn, setIdFor, dayTasks, isRest,
+  M, kids, noteOn, setIdFor, dayTasks, isRest, avatarOf,
 } from './core.js';
 import { $, openSheet, closeSheet, toast } from './ui.js';
 import { run, setReopen } from './sync.js';
@@ -41,7 +41,7 @@ export function sheetEditDay(date){
     <h4>일정 취소 / 되살리기</h4>
     ${rows.length ? rows.map(({r,c}) => {
       const off = D.cancels.has(r.id+'|'+date);
-      return `<div class="mrow"><div class="ic" style="background:${c.color}22">${c.emoji}</div>
+      return `<div class="mrow"><div class="ic" style="background:${c.color}22">${avatarOf(c)}</div>
         <div class="mx"><b style="${off?'text-decoration:line-through;color:var(--ink-3)':''}">${esc(r.title)}</b>
           <span>${esc(c.name)} · ${hm(r.starts_at)}~${hm(r.ends_at)}</span></div>
         <button class="abtn ${off?'on':''}" style="${off?'background:var(--danger)':''};width:70px"
@@ -59,7 +59,7 @@ export function sheetEditDay(date){
 
     <h4>이 날만 일정 추가</h4>
     <div class="seg">${kids().map(c => `<button class="${S.ovrChild===c.id?'on':''}"
-      data-act="ovrchild" data-v="${c.id}">${c.emoji} ${c.name}</button>`).join('')}</div>
+      data-act="ovrchild" data-v="${c.id}">${avatarOf(c)} ${c.name}</button>`).join('')}</div>
     <div class="opt-grid">${PRESETS.map((p,i) =>
       `<div class="opt" data-act="addpreset" data-v="${i}" data-d="${date}">${p.em} ${p.title}
         <br><span style="font-size:11px;color:var(--ink-3);font-weight:600">${p.s}~${p.e}</span></div>`).join('')}</div>
