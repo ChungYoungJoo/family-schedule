@@ -3,7 +3,7 @@
 // =====================================================================
 import {
   sb, D, S, WD, TODAY, DAY_NOTES, PRESETS,
-  esc, wdOf, M, isKid, pickupOf, setIdFor,
+  esc, wdOf, M, isKid, pickupOf, setIdFor, emojiOf,
 } from './core.js';
 import { $, render, openSheet, closeSheet, toast } from './ui.js';
 import { run, refresh, setReopen, reopenFn } from './sync.js';
@@ -320,7 +320,7 @@ export const ACT = {
   kidlink: ({v}) => {
     const m = M(v);
     const url = location.origin + location.pathname + '#kid=' + (m.access_token || '');
-    openSheet(`${m.emoji} ${m.name} 전용 링크`,
+    openSheet(`${emojiOf(m)} ${m.name} 전용 링크`,
       '아이 기기에서 이 링크를 열고 홈 화면에 추가하세요. 로그인 없이 자기 화면만 보입니다.',
       `<div class="mrow"><div class="mx"><span style="font-size:12px">${esc(url)}</span></div></div>
        <button class="btn" style="margin-top:10px" data-act="copylink" data-w="${esc(url)}">링크 복사</button>
