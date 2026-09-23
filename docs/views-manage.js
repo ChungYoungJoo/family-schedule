@@ -3,15 +3,17 @@
 // =====================================================================
 import {
   D, S, WD, CAT, TODAY, esc, hm, toMin, mdLabel,
-  M, A, kids, setNameFor, pendingRedeems, pendingSuggests,
+  M, A, kids, setNameFor, pendingRedeems, pendingSuggests, restGroups, restRange, isRest,
 } from './core.js';
 import { redeemRow, suggestRow } from './views-common.js';
 
-/* 이번 주에 걸려 있는 "이 날만 변경" 목록 */
+/* 이번 주에 걸려 있는 "이 날만 변경" 목록
+   쉬는 날(공휴일 등)은 위의 «쉬는 날» 카드에서 관리하므로 여기서는 뺍니다.
+   안 그러면 연휴 때 취소된 일정이 목록을 가득 채웁니다. */
 function exceptionRows(){
   const rows = [];
 
-  Object.values(D.notes).forEach(n => rows.push({ d:n.on_date, html:
+  Object.values(D.notes).filter(n => !isRest(n.on_date)).forEach(n => rows.push({ d:n.on_date, html:
     `<div class="mrow"><div class="ic">${n.emoji}</div>
       <div class="mx"><b>${mdLabel(n.on_date)} · ${esc(n.label)}</b><span>하루 표시</span></div>
       <button class="undo" data-act="delnote" data-d="${n.on_date}">↺</button></div>` }));
@@ -19,7 +21,7 @@ function exceptionRows(){
   [...D.cancels].forEach(key => {
     const [rid, d] = key.split('|');
     const r = D.routines.find(x => x.id === rid);
-    if(!r) return;
+    if(!r || isRest(d)) return;
     rows.push({ d, html:
       `<div class="mrow"><div class="ic">🚫</div>
         <div class="mx"><b>${mdLabel(d)} · ${esc(r.title)} 취소</b>
@@ -39,6 +41,7 @@ function exceptionRows(){
 export function manageView(){
   const pend = pendingRedeems();
   const sug  = pendingSuggests();
+  const rest = restGroups();
   const sid  = S.editSet;
   const setObj = D.sets.find(s => s.id === sid);
   const ex = exceptionRows();
@@ -52,6 +55,19 @@ export function manageView(){
     ${ex.length ? ex.map(x => x.html).join('')
                 : '<div class="note" style="padding:8px">이번 주에 등록된 예외가 없습니다</div>'}
     <button class="ghost" data-act="editday" data-d="${TODAY}">＋ 오늘 일정 예외 추가</button>
+  </div>
+
+  <div class="sectitle"><h3>쉬는 날 · 공휴일</h3><em>${rest.length ? rest.length+'건 예정' : '없음'}</em></div>
+  <div class="card">
+    ${rest.map(g => `<div class="mrow"><div class="ic">${g.emoji}</div>
+      <div class="mx"><b>${esc(g.label)}</b><span>${restRange(g)}</span></div>
+      <button class="del" data-act="delrest" data-v="${g.from}~${g.to}" data-w="${esc(g.label)}">🗑</button></div>`).join('')
+      || '<div class="note" style="padding:6px">예정된 쉬는 날이 없습니다</div>'}
+    <button class="ghost" data-act="newrest">＋ 쉬는 날 추가</button>
+    <div class="note" style="text-align:left;padding:8px 2px 0">
+      추석·설날처럼 학교도 학원도 쉬는 날입니다. 지정하면 그날 숙제·준비물도 함께 쉬고,
+      연속 달성 🔥 이 끊기지 않습니다. <b>주말은 평소대로</b> — 매일 하는 숙제는 토·일에도 그대로 나옵니다.
+    </div>
   </div>
 
   <div class="sectitle"><h3>시간표 편집</h3><em>지금 적용 중: ${esc(setNameFor(TODAY))}</em></div>
