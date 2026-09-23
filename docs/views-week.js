@@ -3,7 +3,7 @@
 // =====================================================================
 import {
   S, WD, TODAY, esc, hm, mdLabel, wdOf, weekDays, weekStart,
-  me, M, A, kids, isKid, dayItems, pickupOf, noteOn, slotsOn, openOn, setNameFor,
+  me, M, A, kids, isKid, dayItems, pickupOf, noteOn, slotsOn, openOn, setNameFor, avatarOf,
 } from './core.js';
 import { statusRow, slotRow, weekNav } from './views-common.js';
 
@@ -15,7 +15,7 @@ export function weekView(){
   const whoSeg = kid ? '' : `<div class="seg">
       <button class="${S.weekWho==='all'?'on':''}" data-act="weekwho" data-v="all">전체</button>
       ${kids().map(c => `<button class="${S.weekWho===c.id?'on':''}" data-act="weekwho" data-v="${c.id}"
-        >${c.emoji} ${c.name}</button>`).join('')}
+        >${avatarOf(c)} ${c.name}</button>`).join('')}
     </div>`;
 
   const days = weekDays().map(date => {
