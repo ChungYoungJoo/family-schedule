@@ -158,8 +158,14 @@ export function progress(cid, date){
   return { done, total, pct: total ? Math.round(done/total*100) : 0 };
 }
 
+/** 어른(보호자·선생님)의 그날 일정.
+ *  날짜별 값(day_status) > 쉬는 날이면 휴무 > 요일 기본값 > 출근
+ *  공휴일에도 출근하는 사람은 그 날짜만 직접 바꾸면 됩니다 (day_status 가 이깁니다). */
 export function statusOf(mid, date){
-  return D.dayst[mid+'|'+date] ?? D.weekly[mid+'|'+wdOf(date)] ?? '출근';
+  const day = D.dayst[mid+'|'+date];
+  if(day !== undefined) return day;
+  if(D.restDays.has(date)) return '휴무';
+  return D.weekly[mid+'|'+wdOf(date)] ?? '출근';
 }
 // 요일 기본 일정이 하나라도 등록된 사람인지.
 // 가끔 픽업만 도와주는 사람은 «어른들 일정» 줄에 넣지 않습니다.
