@@ -3,7 +3,7 @@
 // =====================================================================
 import {
   D, S, WD, CAT, TODAY, esc, hm, toMin, mdLabel,
-  M, A, kids, setNameFor, pendingRedeems, pendingSuggests, restGroups, restRange, isRest,
+  M, A, kids, setNameFor, pendingRedeems, pendingSuggests, restGroups, restRange, isRest, avatarOf,
 } from './core.js';
 import { redeemRow, suggestRow } from './views-common.js';
 
@@ -99,7 +99,7 @@ export function manageView(){
   </div>
 
   ${kids().map(c => `
-  <div class="sectitle"><h3>${c.emoji} ${esc(c.name)} · 반복 스케줄</h3><em>${esc(setObj?.name||'')}</em></div>
+  <div class="sectitle"><h3>${avatarOf(c)} ${esc(c.name)} · 반복 스케줄</h3><em>${esc(setObj?.name||'')}</em></div>
   <div class="card">
     ${[1,2,3,4,5,6,0].flatMap(wd => D.routines
       .filter(r => r.set_id===sid && r.child_id===c.id && r.weekday===wd)
@@ -115,7 +115,7 @@ export function manageView(){
       })).join('') || '<div class="note" style="padding:6px">등록된 일정이 없습니다</div>'}
     <button class="ghost" data-act="newroutine" data-v="${c.id}">＋ 스케줄 추가</button>
   </div>
-  <div class="sectitle"><h3>${c.emoji} ${esc(c.name)} · 준비물</h3><em>가져갈 것</em></div>
+  <div class="sectitle"><h3>${avatarOf(c)} ${esc(c.name)} · 준비물</h3><em>가져갈 것</em></div>
   <div class="card">
     ${D.tasks.filter(t => t.set_id===sid && t.child_id===c.id && t.kind==='supply')
       .sort((a,b) => a.sort_order - b.sort_order)
@@ -128,7 +128,7 @@ export function manageView(){
     <button class="ghost" data-act="newsupply" data-v="${c.id}">＋ 준비물 추가</button>
   </div>
 
-  <div class="sectitle"><h3>${c.emoji} ${esc(c.name)} · 숙제/할 일</h3><em>${esc(setObj?.name||'')}</em></div>
+  <div class="sectitle"><h3>${avatarOf(c)} ${esc(c.name)} · 숙제/할 일</h3><em>${esc(setObj?.name||'')}</em></div>
   <div class="card">
     ${D.tasks.filter(t => t.set_id===sid && t.child_id===c.id && (t.kind||'homework')==='homework')
       .sort((a,b) => a.sort_order - b.sort_order)
@@ -184,7 +184,7 @@ export function manageView(){
   <div class="card">
     ${D.members.map(m => `<div class="mrow" ${
         m.kind==='helper' ? `data-act="editmember" data-v="${m.id}"` : ''}>
-      <div class="ic" style="background:${m.color}22">${m.emoji}</div>
+      <div class="ic" style="background:${m.color}22">${avatarOf(m)}</div>
       <div class="mx"><b>${esc(m.name)}</b><span>${esc(m.descr||'')} · ${
         m.kind==='child' ? '아이 화면'
         : m.kind==='helper' ? '앱 계정 없음 · 픽업 담당으로만'
