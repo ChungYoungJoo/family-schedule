@@ -39,16 +39,16 @@ function streakCard(cid){
   const stamps = weekStamps(cid);
   return `<div class="card" style="display:flex;align-items:center;gap:12px">
     <div style="text-align:center;flex:none;width:64px">
-      <div style="font-size:26px;line-height:1">${n>0?'🔥':'🌱'}</div>
+      <div style="font-size:26px;line-height:1">${n>0?'😻':'🐱'}</div>
       <b style="font-size:13px">${n>0?`${n}일 연속`:'시작해요'}</b>
     </div>
     <div style="flex:1">
-      <div class="sublabel">이번 주 도장판</div>
+      <div class="sublabel">이번 주 발바닥 도장</div>
       <div style="display:flex;gap:5px">
         ${stamps.map(s => `<div style="flex:1;text-align:center">
           <div style="font-size:10px;font-weight:800;color:var(--ink-3)">${WD[wdOf(s.date)]}</div>
           <div style="font-size:17px;line-height:1.3">${
-            s.rest ? '🎈' : s.done ? '⭐' : s.future ? '·' : s.due ? '○' : '–'}</div></div>`).join('')}
+            s.rest ? '🐟' : s.done ? '🐾' : s.future ? '·' : s.due ? '○' : '–'}</div></div>`).join('')}
       </div>
     </div></div>`;
 }
@@ -79,17 +79,18 @@ export function kidToday(){
       ${checkable(it)
         ? `<div class="box" data-act="att" data-k="${it.kind}" data-v="${it.id}" data-d="${date}">✓</div>`
         : '<div style="width:24px;flex:none"></div>'}</div>`;
-  }).join('') : `<div class="note" style="padding:14px">오늘은 정해진 일정이 없어요 🎉</div>`;
+  }).join('') : `<div class="note" style="padding:14px">오늘은 정해진 일정이 없어! 뒹굴뒹굴~ 🐈</div>`;
 
   const clear = p.total > 0 && p.done === p.total;
   const rest  = isRest(date);          // 공휴일 등 통째로 쉬는 날
 
   return `
   <div class="hero" style="background:linear-gradient(135deg,${c.color},${c.color}bb)">
+    <div class="catwm">${rest && !p.total ? '😽' : clear ? '😻' : '🐱'}</div>
     <div class="date">${dateTitle(date)}</div>
     <div class="hi">${esc(josa(c.name,'아','야'))}, ${
-      rest && !p.total ? '오늘은 쉬는 날이야! 푹 쉬어 🎉'
-      : clear ? '오늘 다 했어! 최고 🎉' : '오늘 할 일이야!'}</div>
+      rest && !p.total ? '오늘은 쉬는 날! 뒹굴뒹굴 하자 🐾'
+      : clear ? '오늘 다 했다! 최고야 😻' : '오늘 할 일이야!'}</div>
     ${rest && !p.total ? '' : `
     <div class="bar"><i style="width:${p.pct}%"></i></div>
     <div class="barlabel"><span>완료 ${p.done} / ${p.total}</span><span>${p.pct}%</span></div>`}
@@ -103,22 +104,22 @@ export function kidToday(){
 
   ${streakCard(c.id)}
 
-  <div class="sectitle"><h3>오늘 일정</h3><em>학원 다녀오면 체크!</em></div>
+  <div class="sectitle"><h3>🐾 오늘 일정</h3><em>학원 다녀오면 체크!</em></div>
   <div class="card"><div class="tl">${tl}</div></div>
 
-  ${sup.length ? `<div class="sectitle"><h3>오늘 챙길 것</h3><em>가방에 넣고 체크!</em></div>
+  ${sup.length ? `<div class="sectitle"><h3>🎒 오늘 챙길 것</h3><em>가방에 넣고 체크!</em></div>
   <div class="card">${sup.map(t => todoRow(t,date)).join('')}</div>` : ''}
 
-  <div class="sectitle"><h3>오늘 숙제</h3><em>누르면 체크돼요</em></div>
+  <div class="sectitle"><h3>📝 오늘 숙제</h3><em>누르면 체크돼요</em></div>
   <div class="card">
     ${hw.length ? hw.map(t => todoRow(t,date)).join('')
                 : `<div class="note" style="padding:10px">${
-                    rest ? '오늘은 숙제도 쉬어요 🎈' : '오늘 숙제는 없어요!'}</div>`}
-    ${clear?`<div class="allclear"><div class="big">🏅</div><b>오늘 할 일 끝!</b>
+                    rest ? '오늘은 숙제도 쉬어! 🐟' : '오늘 숙제는 없어! 🐾'}</div>`}
+    ${clear?`<div class="allclear"><div class="big">😻</div><b>오늘 할 일 끝! 야옹~</b>
       <span>엄마·아빠 화면에도 바로 표시됐어요</span></div>`:''}
   </div>
 
-  ${supTom.length ? `<div class="sectitle"><h3>내일 챙길 것</h3><em>자기 전에 미리!</em></div>
+  ${supTom.length ? `<div class="sectitle"><h3>🌙 내일 챙길 것</h3><em>자기 전에 미리!</em></div>
   <div class="card">${supTom.map(t => `<div class="litem">
       <span class="ttl">🎒 ${esc(t.title)}</span></div>`).join('')}</div>` : ''}`;
 }
@@ -132,6 +133,7 @@ export function shopView(){
   // 내가 제안한 보상
   const mySug = D.suggests.filter(s => s.child_id === c.id);
   const sLabel = {pending:['wait','엄마·아빠가 보는 중'], approved:['done','상점에 생겼어요'], rejected:['need','다음에 해요']};
+  const catFace = bal >= 300 ? '😻' : bal >= 100 ? '😺' : '🐱';
   const sugRows = mySug.slice(0,10).map(s => {
     const st = sLabel[s.status];
     const w  = s.reward_id ? D.rewards.find(x => x.id === s.reward_id) : null;
@@ -149,12 +151,13 @@ export function shopView(){
 
   return `
   <div class="ptcard">
+    <div class="catwm">${catFace}</div>
     <div class="lbl">${esc(c.name)}의 포인트</div>
     <div class="val">${bal}<small>P</small></div>
     <div class="meta"><span>이번 주 +${D.weekEarned[c.id] ?? 0}P</span>
       <span>교환 ${my.filter(r=>r.status==='approved').length}회</span></div>
   </div>
-  <div class="sectitle"><h3>보상 교환하기</h3><em>엄마·아빠 승인 후 받을 수 있어요</em></div>
+  <div class="sectitle"><h3>🎁 보상 교환하기</h3><em>엄마·아빠 승인 후 받을 수 있어요</em></div>
   <div class="shop">${D.rewards.map(w => {
     const req = my.find(r => r.reward_id === w.id && r.status === 'pending');
     const can = bal >= w.cost;
@@ -164,12 +167,12 @@ export function shopView(){
             : `<button ${can?'':'disabled'} data-act="redeem" data-v="${w.id}"
                 >${can?'교환 신청':`${w.cost-bal}P 더 모아요`}</button>`}</div>`;
   }).join('')}</div>
-  <div class="sectitle"><h3>갖고 싶은 보상 말하기</h3><em>엄마·아빠가 포인트를 정해줘요</em></div>
+  <div class="sectitle"><h3>😺 갖고 싶은 보상 말하기</h3><em>엄마·아빠가 포인트를 정해줘요</em></div>
   <div class="card">
-    ${sugRows || '<div class="note" style="padding:8px">갖고 싶은 게 있으면 말해봐! 🎈</div>'}
+    ${sugRows || '<div class="note" style="padding:8px">갖고 싶은 게 있으면 말해봐! 🐾</div>'}
     <button class="ghost" data-act="suggest">＋ 이런 보상 갖고 싶어요</button>
   </div>
-  <div class="sectitle"><h3>내 신청 내역</h3></div>
+  <div class="sectitle"><h3>📜 내 신청 내역</h3></div>
   <div class="card">${my.length ? my.slice(0,10).map(r => {
     const w = D.rewards.find(x => x.id === r.reward_id);
     const st = label[r.status];
