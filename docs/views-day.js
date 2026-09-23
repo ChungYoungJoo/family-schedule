@@ -4,7 +4,7 @@
 import {
   D, S, WD, CAT, TODAY, TOMORROW, esc, josa, hm, toMin, mdLabel, wdOf,
   me, kids, A, dayItems, homeworkOn, suppliesOn, taskDone, attDone, checkable,
-  progress, noteOn, openOn, pendingRedeems, pendingSuggests, pickupOf, streakOf, weekStamps,
+  progress, noteOn, openOn, pendingRedeems, pendingSuggests, pickupOf, streakOf, weekStamps, isRest,
 } from './core.js';
 import { emOf, pickTag, statusRow, slotRow, redeemRow, suggestRow } from './views-common.js';
 
@@ -48,7 +48,7 @@ function streakCard(cid){
         ${stamps.map(s => `<div style="flex:1;text-align:center">
           <div style="font-size:10px;font-weight:800;color:var(--ink-3)">${WD[wdOf(s.date)]}</div>
           <div style="font-size:17px;line-height:1.3">${
-            s.done ? '⭐' : s.future ? '·' : s.due ? '○' : '–'}</div></div>`).join('')}
+            s.rest ? '🎈' : s.done ? '⭐' : s.future ? '·' : s.due ? '○' : '–'}</div></div>`).join('')}
       </div>
     </div></div>`;
 }
@@ -82,17 +82,24 @@ export function kidToday(){
   }).join('') : `<div class="note" style="padding:14px">오늘은 정해진 일정이 없어요 🎉</div>`;
 
   const clear = p.total > 0 && p.done === p.total;
+  const rest  = isRest(date);          // 공휴일 등 통째로 쉬는 날
 
   return `
   <div class="hero" style="background:linear-gradient(135deg,${c.color},${c.color}bb)">
     <div class="date">${dateTitle(date)}</div>
-    <div class="hi">${esc(josa(c.name,'아','야'))}, ${clear?'오늘 다 했어! 최고 🎉':'오늘 할 일이야!'}</div>
+    <div class="hi">${esc(josa(c.name,'아','야'))}, ${
+      rest && !p.total ? '오늘은 쉬는 날이야! 푹 쉬어 🎉'
+      : clear ? '오늘 다 했어! 최고 🎉' : '오늘 할 일이야!'}</div>
+    ${rest && !p.total ? '' : `
     <div class="bar"><i style="width:${p.pct}%"></i></div>
-    <div class="barlabel"><span>완료 ${p.done} / ${p.total}</span><span>${p.pct}%</span></div>
+    <div class="barlabel"><span>완료 ${p.done} / ${p.total}</span><span>${p.pct}%</span></div>`}
     <div class="ptpill">⭐ 내 포인트 ${D.balances[c.id] ?? 0}P</div>
   </div>
-  ${nt?`<div class="banner"><span class="em">${nt.emoji}</span>
-    <div><b>오늘은 ${esc(nt.label)}이에요</b><span>평소 일정과 다르니 확인해요</span></div></div>`:''}
+  ${nt ? (rest
+    ? `<div class="banner"><span class="em">${nt.emoji}</span>
+        <div><b>오늘은 ${esc(nt.label)} 🎉</b><span>학교도 학원도 숙제도 쉬어요</span></div></div>`
+    : `<div class="banner"><span class="em">${nt.emoji}</span>
+        <div><b>오늘은 ${esc(nt.label)}이에요</b><span>평소 일정과 다르니 확인해요</span></div></div>`) : ''}
 
   ${streakCard(c.id)}
 
@@ -105,7 +112,8 @@ export function kidToday(){
   <div class="sectitle"><h3>오늘 숙제</h3><em>누르면 체크돼요</em></div>
   <div class="card">
     ${hw.length ? hw.map(t => todoRow(t,date)).join('')
-                : '<div class="note" style="padding:10px">오늘 숙제는 없어요!</div>'}
+                : `<div class="note" style="padding:10px">${
+                    rest ? '오늘은 숙제도 쉬어요 🎈' : '오늘 숙제는 없어요!'}</div>`}
     ${clear?`<div class="allclear"><div class="big">🏅</div><b>오늘 할 일 끝!</b>
       <span>엄마·아빠 화면에도 바로 표시됐어요</span></div>`:''}
   </div>
@@ -209,7 +217,9 @@ export function parentToday(){
           <span style="font-size:11.5px;color:var(--ink-3);font-weight:600"> · ${esc(c.descr||'')}</span></div>
         ${streak>0?`<span class="badge" style="background:#fff0e6;color:#d9480f">🔥 ${streak}일</span>`:''}
         <span class="badge" style="background:var(--gold-soft);color:#b07400">⭐ ${D.balances[c.id]??0}P</span>
-        <span class="badge ${p.total&&p.done===p.total?'done':'need'}">${p.done}/${p.total}</span></div>
+        ${p.total ? `<span class="badge ${p.done===p.total?'done':'need'}">${p.done}/${p.total}</span>`
+                  : `<span class="badge" style="background:#f1f3f9;color:var(--ink-3)">${
+                      isRest(date) ? '🎌 쉬는 날' : '할 일 없음'}</span>`}</div>
       <div class="bar" style="background:#eef0f6"><i style="width:${p.pct}%;background:${c.color}"></i></div>
 
       <div class="sublabel" style="margin-top:12px">오늘 일정 <em style="font-style:normal;font-weight:600">· 눌러서 출석 체크</em></div>
