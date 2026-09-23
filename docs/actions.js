@@ -2,15 +2,15 @@
 //  actions.js — 클릭 처리 (data-act 기반 이벤트 위임)
 // =====================================================================
 import {
-  sb, D, S, WD, TODAY, DAY_NOTES, PRESETS, STATUS_TYPES, SITTER_TYPES,
-  esc, mdLabel, wdOf, M, isKid, pickupOf, statusOf, setIdFor,
+  sb, D, S, WD, TODAY, DAY_NOTES, PRESETS,
+  esc, wdOf, M, isKid, pickupOf, setIdFor,
 } from './core.js';
 import { $, render, openSheet, closeSheet, toast } from './ui.js';
 import { run, refresh, setReopen, reopenFn } from './sync.js';
 import { sheetRoutine, saveRoutine, sheetTask, saveTask,
-         sheetReward, saveReward, sheetWeekly, saveWeeklyAll,
-         sheetSet, saveSet, sheetPeriod, savePeriod,
-         sheetSuggest, saveSuggest } from './sheets.js';
+         sheetReward, saveReward, sheetSet, saveSet,
+         sheetPeriod, savePeriod, sheetSuggest, saveSuggest } from './sheets.js';
+import { sheetStatus, saveSitter, sheetWeekly, saveWeeklyAll } from './sheets-adult.js';
 import { sheetMember, saveMember } from './sheets-member.js';
 import { sheetEditDay, sheetRest, saveRest, removeRest } from './sheets-day.js';
 
@@ -72,59 +72,9 @@ export const ACT = {
     '요일 기본값으로 되돌렸어요'),
 
   /* ---- 어른 일정 ---- */
-  status: ({v,d}) => {
-    const m = M(v);
-    const cur = statusOf(v,d);
-    const wk  = D.weekly[v+'|'+wdOf(d)] || '';
-    const title = `${mdLabel(d)} ${WD[wdOf(d)]}요일 · ${m.name}`;
+  status:     ({v,d})   => sheetStatus(v, d),
+  savesitter: ({v,d,w}) => saveSitter(v, d, w),
 
-    // 시터 선생님은 근무 시간을 직접 입력합니다 (매일 달라서)
-    if(m.kind === 'helper'){
-      const t = /(\d{2}:\d{2})\s*~\s*(\d{2}:\d{2})/.exec(cur);
-      const s0 = t ? t[1] : '12:00', e0 = t ? t[2] : '18:00';
-      return openSheet(title, '근무 시간을 직접 정할 수 있어요. 이 날짜에만 적용됩니다.', `
-        <div class="row2">
-          <div><label>출근</label><input id="sitS" type="time" value="${s0}"></div>
-          <div><label>퇴근</label><input id="sitE" type="time" value="${e0}"></div>
-        </div>
-        <button class="btn" style="margin-top:14px" data-act="savesitter" data-v="${v}" data-d="${d}" data-w="day"
-          >이 날짜에 적용</button>
-        <button class="ghost" data-act="savesitter" data-v="${v}" data-d="${d}" data-w="week"
-          >매주 ${WD[wdOf(d)]}요일 기본값으로 저장</button>
-        <h4>빠른 설정</h4>
-        <div class="opt-grid">
-          <div class="opt ${cur==='휴무'?'sel':''}" data-act="setstatus" data-v="${v}" data-d="${d}" data-w="휴무">휴무</div>
-          ${SITTER_TYPES.filter(x => x !== '휴무').map(x => `<div class="opt ${x===cur?'sel':''}"
-            data-act="setstatus" data-v="${v}" data-d="${d}" data-w="${esc(x)}">${esc(x.replace('근무 ',''))}</div>`).join('')}
-        </div>
-        <div class="note" style="text-align:left">현재 요일 기본값: ${esc(wk || '없음')}</div>`);
-    }
-
-    openSheet(title, '이 날짜에만 적용됩니다. 아래에서 요일 기본값도 바꿀 수 있어요.',
-      `<div class="opt-grid">${STATUS_TYPES.map(t => `<div class="opt ${t===cur?'sel':''}"
-          data-act="setstatus" data-v="${v}" data-d="${d}" data-w="${esc(t)}">${esc(t)}</div>`).join('')}</div>
-       <h4>매주 ${WD[wdOf(d)]}요일 기본값으로 저장</h4>
-       <div class="opt-grid">${STATUS_TYPES.map(t => `<div class="opt ${t===wk?'sel':''}"
-          data-act="setweekly" data-v="${v}" data-d="${d}" data-w="${esc(t)}">${esc(t)}</div>`).join('')}</div>`);
-  },
-
-  /* 시터 근무시간 직접 입력 저장 (w='day' | 'week') */
-  savesitter: ({v,d,w}) => {
-    const s = $('sitS').value, e = $('sitE').value;
-    if(!s || !e) return toast('시간을 입력해 주세요', true);
-    if(e <= s)   return toast('퇴근 시간이 출근보다 빨라요', true);
-    const status = `근무 ${s}~${e}`;
-    const m = M(v);
-    run(async () => {
-      const r = w === 'week'
-        ? await sb.from('weekly_status').upsert(
-            { family_id:m.family_id, member_id:v, weekday:wdOf(d), status }, { onConflict:'member_id,weekday' })
-        : await sb.from('day_status').upsert(
-            { family_id:m.family_id, member_id:v, on_date:d, status }, { onConflict:'member_id,on_date' });
-      closeSheet(); setReopen(null);
-      return r;
-    }, w === 'week' ? `매주 ${WD[wdOf(d)]}요일 ${status}` : `${mdLabel(d)} ${status}`);
-  },
   setstatus: ({v,d,w}) => run(async () => {
     const m = M(v);
     const r = await sb.from('day_status').upsert(
