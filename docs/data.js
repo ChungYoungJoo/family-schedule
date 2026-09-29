@@ -6,10 +6,14 @@ import { sb, D, S, isKid, kids, weekDays, setIdFor, REST_KEYS,
 
 export async function loadAll(){
   const days = weekDays();
-  // 다른 주를 보고 있어도 "어제/오늘/내일" 카드가 그려져야 하므로 항상 포함시킵니다
-  const from = [days[0], YESTERDAY].sort()[0];
-  const to   = [days[6], TOMORROW].sort().pop();
+  // 다른 주를 보고 있어도 "어제/오늘/내일" 카드가 그려져야 하므로 항상 포함시킵니다.
+  // 달력에서 지난 날짜를 열었으면(S.extraDay) 그날 기록도 같이 읽어옵니다.
+  const edges = [days[0], days[6], YESTERDAY, TOMORROW];
+  if(S.extraDay) edges.push(S.extraDay);
+  const from = edges.slice().sort()[0];
+  const to   = edges.slice().sort().pop();
   const inWin = q => q.gte('on_date', from).lte('on_date', to);
+  D.loadedFrom = from; D.loadedTo = to;
   // 연속 달성 계산용 (최근 90일 보너스 기록)
   const ledgerFrom = ymd(addDays(parseYmd(TODAY), -95));
   // 쉬는 날은 연속 달성(과거)과 관리 화면(미래)에 둘 다 필요해서 넓게 읽습니다
@@ -91,9 +95,19 @@ export async function loadAll(){
   D.weekly = {}; (wsta||[]).forEach(w => D.weekly[w.member_id+'|'+w.weekday] = w.status);
   D.dayst  = {}; (dsta||[]).forEach(w => D.dayst[w.member_id+'|'+w.on_date]  = w.status);
 
-  D.taskLogs = new Set((tlogs||[]).map(l => l.task_id+'|'+l.on_date));
-  D.attLogs  = new Set((alogs||[]).map(l =>
-    (l.routine_id ? `routine:${l.routine_id}` : `extra:${l.extra_event_id}`) + '|' + l.on_date));
+  // 승인 대기(pending)와 완료를 나눠 담습니다.
+  // 07_late_checks.sql 실행 전에는 pending 컬럼이 없으므로 전부 완료로 봅니다.
+  const attKey = l => (l.routine_id ? `routine:${l.routine_id}` : `extra:${l.extra_event_id}`) + '|' + l.on_date;
+  D.taskLogs = new Set((tlogs||[]).filter(l => !l.pending).map(l => l.task_id+'|'+l.on_date));
+  D.taskWait = new Set((tlogs||[]).filter(l =>  l.pending).map(l => l.task_id+'|'+l.on_date));
+  D.attLogs  = new Set((alogs||[]).filter(l => !l.pending).map(attKey));
+  D.attWait  = new Set((alogs||[]).filter(l =>  l.pending).map(attKey));
+
+  // 보호자 승인 대기 목록 (승인·거절 화면용)
+  D.waits = [
+    ...(tlogs||[]).filter(l => l.pending).map(l => ({ kind:'task', row:l })),
+    ...(alogs||[]).filter(l => l.pending).map(l => ({ kind:'att',  row:l })),
+  ].sort((a,b) => a.row.on_date < b.row.on_date ? -1 : 1);
 
   D.balances = {}; (bal||[]).forEach(b => D.balances[b.child_id] = b.balance);
 
