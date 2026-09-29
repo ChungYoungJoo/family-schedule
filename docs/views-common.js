@@ -2,7 +2,7 @@
 //  views-common.js — 여러 화면이 함께 쓰는 조각들
 // =====================================================================
 import {
-  D, S, CAT, HELPFUL, BUSY, esc, josa, hm, A, M, pickers,
+  D, S, CAT, HELPFUL, BUSY, esc, josa, hm, mdLabel, A, M, pickers,
   pickupOf, pickupRow, defaultPickup, statusOf, hasWeekly, avatarOf,
 } from './core.js';
 
@@ -89,6 +89,24 @@ export function suggestRow(s){
         value="100" inputmode="numeric"><b>P</b></label>
       <button class="abtn on" style="background:var(--ok)" data-act="sugok" data-v="${s.id}">확정</button>
       <button class="abtn" data-act="sugno" data-v="${s.id}">거절</button></div></div>`;
+}
+
+/* 아이가 지난 날짜를 뒤늦게 체크한 것 — 보호자가 승인/취소하는 줄 */
+export function waitRow(w){
+  const r = w.row, c = M(r.child_id);
+  const what = w.kind === 'task'
+    ? (D.tasks.find(t => t.id === r.task_id) || {})
+    : (r.routine_id ? D.routines.find(x => x.id === r.routine_id)
+                    : D.extras.find(x => x.id === r.extra_event_id)) || {};
+  const icon = w.kind === 'task' ? (what.kind === 'supply' ? '🎒' : '📝') : (what.emoji || '🏫');
+  return `<div class="slot"><div class="info">
+      <b>${c?avatarOf(c):''} ${esc(c?c.name:'')} · ${icon} ${esc(what.title || '항목')}</b>
+      <span>${mdLabel(r.on_date)} 것을 뒤늦게 체크했어요</span></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+      <button class="abtn on" style="background:var(--ok)" data-act="waitok"
+        data-v="${r.id}" data-k="${w.kind}" data-d="${r.on_date}" data-w="${r.child_id}">승인</button>
+      <button class="abtn" data-act="waitno" data-v="${r.id}" data-k="${w.kind}">아니오</button>
+    </div></div>`;
 }
 
 /* 주 이동 버튼 */
