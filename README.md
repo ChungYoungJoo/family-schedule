@@ -46,6 +46,7 @@ family-board/
 | 4 | `supabase/04_supplies.sql` | 준비물 체크리스트 |
 | 5 | `supabase/05_reward_suggestions.sql` | 아이가 갖고 싶은 보상 제안 |
 | 6 | `supabase/06_rest_days.sql` | 공휴일·쉬는 날 (숙제도 함께 쉬기) |
+| 7 | `supabase/07_late_checks.sql` | 지난 날짜 완료는 보호자 승인 후 |
 
 `03_seed.sql` 은 **맨 위 ▼설정▼ 블록을 먼저 고치세요.**
 
