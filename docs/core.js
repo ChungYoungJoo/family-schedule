@@ -114,8 +114,10 @@ export const S = {                 // 화면 상태
   editSet:null, ovrChild:null, weekOffset:0, syncing:false,
 };
 
-export const TODAY    = ymd(new Date());
-export const TOMORROW = ymd(addDays(new Date(), 1));
+export const TODAY     = ymd(new Date());
+export const TOMORROW  = ymd(addDays(new Date(), 1));
+// 어제 것을 다음날 아침에 체크할 수 있어야 해서 데이터도 어제까지 읽어옵니다
+export const YESTERDAY = ymd(addDays(new Date(), -1));
 export const weekStart = () => {
   const d = new Date();
   d.setDate(d.getDate() - ((d.getDay()+6)%7) + S.weekOffset*7);
