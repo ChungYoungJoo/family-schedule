@@ -4,9 +4,10 @@
 import {
   D, S, WD, CAT, TODAY, TOMORROW, YESTERDAY, esc, josa, hm, toMin, mdLabel, wdOf,
   me, kids, A, dayItems, homeworkOn, suppliesOn, taskDone, attDone, checkable,
-  progress, noteOn, openOn, pendingRedeems, pendingSuggests, pickupOf, streakOf, weekStamps, isRest, avatarOf,
+  progress, waitCount, noteOn, openOn, pendingRedeems, pendingSuggests,
+  pickupOf, streakOf, weekStamps, isRest, avatarOf,
 } from './core.js';
-import { emOf, pickTag, statusRow, slotRow, redeemRow, suggestRow } from './views-common.js';
+import { emOf, pickTag, statusRow, slotRow, redeemRow, suggestRow, waitRow } from './views-common.js';
 
 const dateTitle = date => `${mdLabel(date).replace('/','월 ')}일 ${WD[wdOf(date)]}요일`;
 
@@ -85,7 +86,7 @@ export function kidToday(){
   const rest  = isRest(date);          // 공휴일 등 통째로 쉬는 날
   // 어제 늦게 끝나 체크를 못 한 것이 있으면 아침에 마무리할 수 있게 안내합니다
   const yp    = progress(c.id, YESTERDAY);
-  const yLeft = yp.total - yp.done;
+  const yLeft = yp.total - yp.done - waitCount(c.id, YESTERDAY);   // 이미 신청한 건 빼고
 
   return `
   <div class="hero" style="--kid:${c.color};background:linear-gradient(135deg,${c.color},${c.color}bb)">
@@ -217,18 +218,25 @@ export function parentToday(){
       <div class="sub">포인트를 정해서 확정하면 아이 상점에 올라갑니다</div>
       ${sug.map(suggestRow).join('')}</div>` : '';
 
+  // 아이가 지난 날짜를 뒤늦게 체크한 것 — 보호자 확인이 있어야 완료됩니다
+  const waitCard = D.waits.length ? `
+    <div class="card" style="border-left:4px solid var(--warn)">
+      <h2 style="color:#b06000">🕐 지난 날짜 완료 확인 ${D.waits.length}건</h2>
+      <div class="sub">아이가 «그날 했다» 고 알려온 것들이에요. 맞으면 승인해 주세요</div>
+      ${D.waits.map(waitRow).join('')}</div>` : '';
+
   // 어제 체크가 빠진 아이 — 늦게 끝난 날은 다음날 아침에 대신 눌러줄 수 있습니다
   const yLeftKids = kids()
-    .map(c => ({ c, p: progress(c.id, YESTERDAY) }))
-    .filter(x => x.p.total > 0 && x.p.done < x.p.total);
+    .map(c => ({ c, p: progress(c.id, YESTERDAY), w: waitCount(c.id, YESTERDAY) }))
+    .filter(x => x.p.total > 0 && x.p.done + x.w < x.p.total);
   const ydCard = yLeftKids.length ? `
     <div class="card" style="border-left:4px solid var(--warn)">
       <h2 style="color:#b06000">🌙 어제 체크가 빠졌어요</h2>
       <div class="sub">늦게 끝나 못 누른 것이 있으면 지금 대신 체크할 수 있어요</div>
-      ${yLeftKids.map(({c,p}) => `<div class="mrow" data-act="daycheck" data-v="${c.id}" data-d="${YESTERDAY}">
+      ${yLeftKids.map(({c,p,w}) => `<div class="mrow" data-act="daycheck" data-v="${c.id}" data-d="${YESTERDAY}">
         <div class="ic" style="background:${c.color}22">${avatarOf(c)}</div>
         <div class="mx"><b>${esc(c.name)}</b>
-          <span>${p.done}/${p.total} · ${p.total - p.done}개 남음</span></div>
+          <span>${p.done}/${p.total} · ${p.total - p.done - w}개 남음</span></div>
         <span class="chev">›</span></div>`).join('')}</div>` : '';
 
   const kidCards = kids().map(c => {
@@ -278,7 +286,7 @@ export function parentToday(){
     <em><button class="editday" data-act="editday" data-d="${date}">✏️ 이 날만 변경</button></em></div>
   ${nt?`<div class="banner"><span class="em">${nt.emoji}</span>
     <div><b>오늘은 ${esc(nt.label)}</b><span>해당 일정이 오늘만 취소·변경됐습니다</span></div></div>`:''}
-  ${alertCard}${ydCard}${redeemCard}${suggestCard}
+  ${alertCard}${waitCard}${ydCard}${redeemCard}${suggestCard}
   <div class="sectitle"><h3>오늘 어른들 일정</h3><em>눌러서 변경</em></div>
   <div class="card"><div class="prow" style="margin:0">${statusRow(date)}</div></div>
   <div class="sectitle"><h3>아이별 현황</h3></div>
