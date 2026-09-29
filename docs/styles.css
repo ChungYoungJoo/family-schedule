@@ -140,6 +140,7 @@ main{flex:1; padding:14px 16px 96px}
 .wk{display:flex; flex-direction:column; gap:8px}
 .day{background:var(--card); border-radius:14px; box-shadow:var(--shadow); padding:12px 13px; display:flex; gap:12px}
 .day.today{outline:2px solid var(--primary); outline-offset:-2px}
+.day.tapday{cursor:pointer}
 .day .dcol{width:40px; flex:none; text-align:center}
 .day .dcol b{display:block; font-size:14px; font-weight:800}
 .day .dcol span{font-size:10.5px; color:var(--ink-3); font-weight:700}
