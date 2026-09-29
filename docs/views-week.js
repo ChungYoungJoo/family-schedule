@@ -18,10 +18,15 @@ export function weekView(){
         >${avatarOf(c)} ${c.name}</button>`).join('')}
     </div>`;
 
+  // 한 아이만 보고 있을 때는 지난 날짜를 눌러 그날 체크를 마무리할 수 있습니다
+  const one = targets.length === 1 ? targets[0] : null;
+
   const days = weekDays().map(date => {
     const wd = wdOf(date), nt = noteOn(date);
     const items = targets.flatMap(c => dayItems(c.id,date).map(it => ({it,c})));
-    return `<div class="day ${wd===6?'sat':wd===0?'sun':''} ${date===TODAY?'today':''}">
+    const tap = one && date <= TODAY;
+    return `<div class="day ${wd===6?'sat':wd===0?'sun':''} ${date===TODAY?'today':''} ${tap?'tapday':''}"
+      ${tap ? `data-act="daycheck" data-v="${one.id}" data-d="${date}"` : ''}>
       <div class="dcol"><b>${WD[wd]}</b><span>${mdLabel(date)}</span></div>
       <div class="chips">
         ${nt?`<span class="chip note">${nt.emoji} ${esc(nt.label)}</span>`:''}
@@ -37,7 +42,7 @@ export function weekView(){
 
   return `${whoSeg}${weekNav()}
   <div class="sectitle" style="margin-top:0"><h3>${esc(setNameFor(weekStart()))}</h3>
-    <em>👩👨🧑‍🏫🚶 = 하원 담당</em></div>
+    <em>${one ? '지난 날짜를 눌러 체크' : '👩👨🧑‍🏫🚶 = 하원 담당'}</em></div>
   <div class="wk">${days}</div>`;
 }
 
