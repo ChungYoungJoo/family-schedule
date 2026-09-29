@@ -72,7 +72,10 @@ prototype.html         초기 화면 시안 (앱과 무관, 업로드 안 됨)
    가끔 오는 사람은 `kind='helper'` 로 추가하며(앱 계정 없음), 요일 기본 일정이
    없으면 `hasWeekly()` 로 «어른들 일정» 줄에서는 빠집니다
 4. **포인트** — 클라이언트가 못 건드림. `task_logs`/`attendance_logs` 삽입 시 **DB 트리거**가 적립,
-   삭제 시 회수. 하루 전부 완료 보너스는 `claim_daily_bonus()` RPC 가 서버에서 재검증
+   삭제 시 회수. 하루 전부 완료 보너스는 `claim_daily_bonus()` RPC 가 서버에서 재검증.
+   체크는 **지난 날짜에도 가능** (`sheetDayCheck(childId, date)`) — 늦게 끝나 그날 못 누른 것을
+   다음날 마무리하는 용도. 그 날짜로 적립되고 보너스도 그날 것으로 들어감.
+   그래서 `loadAll` 의 조회 범위는 항상 `YESTERDAY` 까지 포함한다
 5. **연속 달성** — `point_ledger` 의 `ref_type='bonus'` 행이 있는 날 = 다 한 날
 6. **보상 제안** — 아이가 `reward_suggestions` 에 올리면 부모가 포인트를 정해
    `approve_reward_suggestion(id, cost)` RPC 로 확정 → `rewards` 행이 생김.
