@@ -3,7 +3,7 @@
 // =====================================================================
 import {
   sb, D, S, WD, TODAY, DAY_NOTES, PRESETS,
-  esc, wdOf, M, isKid, pickupOf, setIdFor, emojiOf,
+  esc, mdLabel, wdOf, M, isKid, pickupOf, setIdFor, emojiOf,
 } from './core.js';
 import { $, render, openSheet, closeSheet, toast } from './ui.js';
 import { run, refresh, setReopen, reopenFn } from './sync.js';
@@ -12,12 +12,15 @@ import { sheetRoutine, saveRoutine, sheetTask, saveTask,
          sheetPeriod, savePeriod, sheetSuggest, saveSuggest } from './sheets.js';
 import { sheetStatus, saveSitter, sheetWeekly, saveWeeklyAll } from './sheets-adult.js';
 import { sheetMember, saveMember } from './sheets-member.js';
-import { sheetEditDay, sheetRest, saveRest, removeRest } from './sheets-day.js';
+import { sheetEditDay, sheetDayCheck, sheetRest, saveRest, removeRest } from './sheets-day.js';
 
 /* 하루 전부 완료 보너스 — 서버가 실제 완료 여부를 다시 검증합니다 */
 async function maybeBonus(childId, date){
   const { data } = await sb.rpc('claim_daily_bonus', { p_child: childId, p_date: date });
-  if(data && data > 0) setTimeout(() => toast(`오늘 할 일 전부 완료! 보너스 +${data}P 🎉`), 400);
+  if(!(data > 0)) return;
+  // 지난 날짜를 뒤늦게 체크한 경우엔 어느 날 보너스인지 같이 알려줍니다
+  const when = date === TODAY ? '오늘' : `${mdLabel(date)}`;
+  setTimeout(() => toast(`${when} 할 일 전부 완료! 보너스 +${data}P 🎉`), 400);
 }
 
 export const ACT = {
@@ -92,6 +95,9 @@ export const ACT = {
 
   /* ---- 이 날만 변경 ---- */
   editday: ({d}) => { setReopen(() => sheetEditDay(d)); sheetEditDay(d); },
+
+  /* 그날(지난 날짜 포함) 숙제·출석 체크 */
+  daycheck: ({v,d}) => sheetDayCheck(v, d),
 
   setnote: ({d,v}) => run(async () => {
     const n = DAY_NOTES.find(x => x.key === v);
