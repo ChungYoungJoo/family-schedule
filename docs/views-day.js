@@ -2,7 +2,7 @@
 //  views-day.js — 오늘 화면 (아이 / 보호자) + 포인트 상점
 // =====================================================================
 import {
-  D, S, WD, CAT, TODAY, TOMORROW, esc, josa, hm, toMin, mdLabel, wdOf,
+  D, S, WD, CAT, TODAY, TOMORROW, YESTERDAY, esc, josa, hm, toMin, mdLabel, wdOf,
   me, kids, A, dayItems, homeworkOn, suppliesOn, taskDone, attDone, checkable,
   progress, noteOn, openOn, pendingRedeems, pendingSuggests, pickupOf, streakOf, weekStamps, isRest, avatarOf,
 } from './core.js';
@@ -83,6 +83,9 @@ export function kidToday(){
 
   const clear = p.total > 0 && p.done === p.total;
   const rest  = isRest(date);          // 공휴일 등 통째로 쉬는 날
+  // 어제 늦게 끝나 체크를 못 한 것이 있으면 아침에 마무리할 수 있게 안내합니다
+  const yp    = progress(c.id, YESTERDAY);
+  const yLeft = yp.total - yp.done;
 
   return `
   <div class="hero" style="--kid:${c.color};background:linear-gradient(135deg,${c.color},${c.color}bb)">
@@ -102,6 +105,12 @@ export function kidToday(){
         <div><b>오늘은 ${esc(nt.label)}이에요</b><span>평소 일정과 다르니 확인해요</span></div></div>`) : ''}
 
   ${streakCard(c.id)}
+
+  ${yLeft > 0 ? `<div class="card" style="border-left:4px solid var(--warn)">
+    <h2>🌙 어제 체크 안 한 게 ${yLeft}개 있어</h2>
+    <div class="sub">어젯밤에 다 해놓고 누르는 걸 깜빡했다면 지금 눌러도 돼!</div>
+    <button class="ghost" data-act="daycheck" data-v="${c.id}" data-d="${YESTERDAY}"
+      >어제 것 체크하기</button></div>` : ''}
 
   <div class="sectitle"><h3>🐾 오늘 일정</h3><em>학원 다녀오면 체크!</em></div>
   <div class="card"><div class="tl">${tl}</div></div>
@@ -208,6 +217,20 @@ export function parentToday(){
       <div class="sub">포인트를 정해서 확정하면 아이 상점에 올라갑니다</div>
       ${sug.map(suggestRow).join('')}</div>` : '';
 
+  // 어제 체크가 빠진 아이 — 늦게 끝난 날은 다음날 아침에 대신 눌러줄 수 있습니다
+  const yLeftKids = kids()
+    .map(c => ({ c, p: progress(c.id, YESTERDAY) }))
+    .filter(x => x.p.total > 0 && x.p.done < x.p.total);
+  const ydCard = yLeftKids.length ? `
+    <div class="card" style="border-left:4px solid var(--warn)">
+      <h2 style="color:#b06000">🌙 어제 체크가 빠졌어요</h2>
+      <div class="sub">늦게 끝나 못 누른 것이 있으면 지금 대신 체크할 수 있어요</div>
+      ${yLeftKids.map(({c,p}) => `<div class="mrow" data-act="daycheck" data-v="${c.id}" data-d="${YESTERDAY}">
+        <div class="ic" style="background:${c.color}22">${avatarOf(c)}</div>
+        <div class="mx"><b>${esc(c.name)}</b>
+          <span>${p.done}/${p.total} · ${p.total - p.done}개 남음</span></div>
+        <span class="chev">›</span></div>`).join('')}</div>` : '';
+
   const kidCards = kids().map(c => {
     const p = progress(c.id,date), items = dayItems(c.id,date);
     const hw = homeworkOn(c.id,date), sup = suppliesOn(c.id,date);
@@ -255,7 +278,7 @@ export function parentToday(){
     <em><button class="editday" data-act="editday" data-d="${date}">✏️ 이 날만 변경</button></em></div>
   ${nt?`<div class="banner"><span class="em">${nt.emoji}</span>
     <div><b>오늘은 ${esc(nt.label)}</b><span>해당 일정이 오늘만 취소·변경됐습니다</span></div></div>`:''}
-  ${alertCard}${redeemCard}${suggestCard}
+  ${alertCard}${ydCard}${redeemCard}${suggestCard}
   <div class="sectitle"><h3>오늘 어른들 일정</h3><em>눌러서 변경</em></div>
   <div class="card"><div class="prow" style="margin:0">${statusRow(date)}</div></div>
   <div class="sectitle"><h3>아이별 현황</h3></div>
