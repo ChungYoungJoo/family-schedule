@@ -33,6 +33,7 @@ docs/                  ← 배포되는 앱
   views-common.js      pickTag, itemChip, statusRow, slotRow, redeemRow, weekNav
   views-day.js         kidToday / shopView / parentToday / 내일 미리보기
   views-week.js        weekView / familyView
+  views-month.js       monthView (월간 달력 — 주간 탭 안에서 S.cal 로 전환)
   views-manage.js      manageView
   ui.js                render / paintHeader / 바텀시트 / 토스트 / 로그인 화면
   sync.js              refresh / run(쓰기 공통) / reopenFn
@@ -46,6 +47,7 @@ supabase/
   01_schema.sql  02_policies.sql  03_seed.sql  04_supplies.sql
   05_reward_suggestions.sql   아이가 갖고 싶은 보상 제안 → 부모가 포인트 정해 확정
   06_rest_days.sql            task_cancels (그날만 쉬는 숙제) + claim_daily_bonus 갱신
+  07_late_checks.sql          task_logs/attendance_logs 에 pending + family_today()
 upload-to-github.ps1   배포 스크립트
 prototype.html         초기 화면 시안 (앱과 무관, 업로드 안 됨)
 ```
@@ -76,6 +78,17 @@ prototype.html         초기 화면 시안 (앱과 무관, 업로드 안 됨)
    체크는 **지난 날짜에도 가능** (`sheetDayCheck(childId, date)`) — 늦게 끝나 그날 못 누른 것을
    다음날 마무리하는 용도. 그 날짜로 적립되고 보너스도 그날 것으로 들어감.
    그래서 `loadAll` 의 조회 범위는 항상 `YESTERDAY` 까지 포함한다
+4-1. **지난 날짜는 보호자 승인 후 완료** — `task_logs`/`attendance_logs` 의 `pending` 컬럼.
+   아이가 지난 날짜를 누르면 `pending=true` 로 들어가고 포인트는 아직 안 준다.
+   보호자가 `pending=false` 로 바꾸면 트리거가 그때 적립한다.
+   서버가 `family_today(family_id)`(한국 시간)로 «오늘/지난 날»을 판정하므로
+   아이는 오늘 것만 바로 완료할 수 있고, 승인된 지난 기록은 지우지 못한다.
+   보호자가 직접 누르는 것은 날짜와 무관하게 바로 완료.
+   클라이언트는 `D.taskWait`/`D.attWait`(대기 여부)와 `D.waits`(승인 목록)로 구분한다
+4-2. **월간 달력** — `S.cal='month'` 일 때 주간 탭에 `monthView`.
+   칸 표시는 이미 읽어둔 것(시간표·`bonusDates` 95일·`restDays`)만 써서 추가 조회가 없다.
+   날짜를 누르면 `S.extraDay` 를 세워 그날 기록을 읽어온 뒤 체크 창을 연다
+   (`closeSheet()` 가 `S.extraDay` 를 비운다)
 5. **연속 달성** — `point_ledger` 의 `ref_type='bonus'` 행이 있는 날 = 다 한 날
 6. **보상 제안** — 아이가 `reward_suggestions` 에 올리면 부모가 포인트를 정해
    `approve_reward_suggestion(id, cost)` RPC 로 확정 → `rewards` 행이 생김.
