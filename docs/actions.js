@@ -28,30 +28,56 @@ export const ACT = {
   tab:     ({v}) => { S.tab = v; setReopen(null); closeSheet(); render(); },
   weekwho: ({v}) => { S.weekWho = v; render(); },
   wkoff:   ({v}) => { S.weekOffset = v === '0' ? 0 : S.weekOffset + Number(v); refresh(); },
+  calview: ({v}) => { S.cal = v; render(); },
+  mooff:   ({v}) => { S.monthOffset = v === '0' ? 0 : S.monthOffset + Number(v); render(); },
   editset: ({v}) => { S.editSet = v; render(); },
   logout:  async () => { await sb.auth.signOut(); localStorage.removeItem('kidToken'); location.reload(); },
 
-  /* ---- 체크 ---- */
+  /* ---- 체크 ----
+     아이가 지난 날짜를 누르면 바로 완료되지 않고 «승인 대기»가 됩니다.
+     보호자가 누르는 것은 날짜와 상관없이 바로 완료입니다.          */
   task: ({v,d}) => run(async () => {
     const t = D.tasks.find(x => x.id === v);
-    if(D.taskLogs.has(v+'|'+d)) return sb.from('task_logs').delete().eq('task_id',v).eq('on_date',d);
+    const wait = isKid() && d !== TODAY;
+    if(D.taskLogs.has(v+'|'+d) || D.taskWait.has(v+'|'+d))
+      return sb.from('task_logs').delete().eq('task_id',v).eq('on_date',d);
+    // pending 은 07_late_checks.sql 을 실행해야 생기는 컬럼입니다.
+    // 필요할 때만 넣어, SQL 실행 전에도 «오늘 체크» 는 그대로 동작하게 합니다.
     const r = await sb.from('task_logs').insert(
-      { family_id:t.family_id, child_id:t.child_id, task_id:v, on_date:d });
+      { family_id:t.family_id, child_id:t.child_id, task_id:v, on_date:d, ...(wait?{pending:true}:{}) });
     if(r.error) return r;
-    await maybeBonus(t.child_id, d);
+    if(wait) toast('엄마·아빠가 확인하면 완료돼요 🕐');
+    else await maybeBonus(t.child_id, d);
     return r;
   }),
 
   att: ({v,d,k}) => run(async () => {
     const it  = (k === 'routine' ? D.routines : D.extras).find(x => x.id === v);
     const col = k === 'routine' ? 'routine_id' : 'extra_event_id';
-    if(D.attLogs.has(`${k}:${v}|${d}`)) return sb.from('attendance_logs').delete().eq(col,v).eq('on_date',d);
+    const key = `${k}:${v}|${d}`;
+    const wait = isKid() && d !== TODAY;
+    if(D.attLogs.has(key) || D.attWait.has(key))
+      return sb.from('attendance_logs').delete().eq(col,v).eq('on_date',d);
     const r = await sb.from('attendance_logs').insert(
-      { family_id:it.family_id, child_id:it.child_id, [col]:v, on_date:d });
+      { family_id:it.family_id, child_id:it.child_id, [col]:v, on_date:d, ...(wait?{pending:true}:{}) });
     if(r.error) return r;
-    await maybeBonus(it.child_id, d);
+    if(wait) toast('엄마·아빠가 확인하면 완료돼요 🕐');
+    else await maybeBonus(it.child_id, d);
     return r;
   }),
+
+  /* ---- 지난 날짜 완료 승인 (보호자) ---- */
+  waitok: ({v,k,d,w}) => run(async () => {
+    const tbl = k === 'task' ? 'task_logs' : 'attendance_logs';
+    const r = await sb.from(tbl).update({ pending:false }).eq('id', v);
+    if(r.error) return r;
+    await maybeBonus(w, d);
+    return r;
+  }, '승인했어요'),
+
+  waitno: ({v,k}) => run(
+    () => sb.from(k === 'task' ? 'task_logs' : 'attendance_logs').delete().eq('id', v),
+    '완료를 취소했어요'),
 
   /* ---- 픽업 담당 ---- */
   pick: ({v,d,k,w}) => run(async () => {
@@ -96,8 +122,15 @@ export const ACT = {
   /* ---- 이 날만 변경 ---- */
   editday: ({d}) => { setReopen(() => sheetEditDay(d)); sheetEditDay(d); },
 
-  /* 그날(지난 날짜 포함) 숙제·출석 체크 */
-  daycheck: ({v,d}) => sheetDayCheck(v, d),
+  /* 그날(지난 날짜 포함) 숙제·출석 체크.
+     읽어둔 기간 밖의 날짜면 그날 기록을 먼저 받아옵니다. */
+  daycheck: async ({v,d}) => {
+    if(!D.loadedFrom || d < D.loadedFrom || d > D.loadedTo){
+      S.extraDay = d;
+      await refresh();
+    }
+    sheetDayCheck(v, d);
+  },
 
   setnote: ({d,v}) => run(async () => {
     const n = DAY_NOTES.find(x => x.key === v);
