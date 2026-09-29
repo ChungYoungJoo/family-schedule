@@ -12,7 +12,9 @@ import {
   sb, D, S, WD, DAY_NOTES, PRESETS, TODAY,
   esc, josa, hm, toMin, mdLabel, wdOf, ymd, parseYmd, addDays,
   M, kids, noteOn, setIdFor, dayTasks, isRest, avatarOf,
+  liveItems, tasksOn, checkable, attDone, taskDone, progress,
 } from './core.js';
+import { emOf } from './views-common.js';
 import { $, openSheet, closeSheet, toast } from './ui.js';
 import { run, setReopen } from './sync.js';
 
@@ -69,6 +71,51 @@ export function sheetEditDay(date){
         <div class="mx"><b>${esc(a.title)}</b>
           <span>${esc(M(a.child_id)?.name||'')} · ${hm(a.starts_at)}~${hm(a.ends_at)}</span></div>
         <button class="undo" data-act="delextra" data-v="${a.id}">↺ 삭제</button></div>`).join('')}` : ''}`);
+}
+
+/* ---------------- 그날 체크 (지난 날짜 포함) ----------------
+ *  늦게 끝나서 그날 못 누른 숙제·출석을 다음날에 체크할 수 있게 합니다.
+ *  체크하면 그 날짜로 포인트가 들어가고, 다 채우면 그날의 보너스도 받습니다
+ *  (서버의 claim_daily_bonus 가 날짜를 받아 다시 검증합니다).            */
+export function sheetDayCheck(cid, date){
+  const c = M(cid);
+  if(!c || date > TODAY) return;          // 앞으로 올 날은 체크하지 않습니다
+  setReopen(() => sheetDayCheck(cid, date));
+
+  const acts  = liveItems(cid, date).filter(checkable);
+  const ts    = tasksOn(cid, date);
+  const p     = progress(cid, date);
+  const attPt = D.family?.attend_points ?? 20;
+  const allDone = p.total > 0 && p.done === p.total;
+
+  const row = (on, attrs, icon, title, sub, pt) => `
+    <div class="task ${on?'done':''}" ${attrs}>
+      <div class="box">✓</div>
+      <div class="tx"><b>${icon} ${esc(title)}</b>${sub?`<span>${esc(sub)}</span>`:''}</div>
+      <span class="pt">+${pt}P</span></div>`;
+
+  openSheet(`${mdLabel(date)} (${WD[wdOf(date)]}) · ${c.name}`,
+    date === TODAY ? '오늘 한 것을 체크하세요.'
+                   : '지난 날짜예요. 빠뜨린 것을 지금 체크해도 그날 포인트로 들어갑니다.', `
+    <div class="mrow" style="padding-top:0">
+      <div class="mx"><b>완료 ${p.done} / ${p.total}</b>
+        <span>${allDone ? '이 날은 다 했어요 🎉' : '누르면 체크·해제됩니다'}</span></div>
+      ${p.total ? (allDone ? '<span class="badge done">완료</span>'
+                           : `<span class="badge need">${p.total - p.done}개 남음</span>`) : ''}
+    </div>
+
+    ${acts.length ? `<h4>일정 출석</h4>${acts.map(it => row(
+        attDone(it,date),
+        `data-act="att" data-k="${it.kind}" data-v="${it.id}" data-d="${date}"`,
+        emOf(it), it.title, `${hm(it.starts_at)}~${hm(it.ends_at)}`, attPt)).join('')}` : ''}
+
+    ${ts.length ? `<h4>숙제·준비물</h4>${ts.map(t => row(
+        taskDone(t,date),
+        `data-act="task" data-v="${t.id}" data-d="${date}"`,
+        t.kind === 'supply' ? '🎒' : '📝', t.title, t.note || '', t.points)).join('')}` : ''}
+
+    ${!acts.length && !ts.length
+      ? '<div class="note" style="padding:10px">이 날은 체크할 게 없어요 🐾</div>' : ''}`);
 }
 
 /* ---------------- 공휴일·쉬는 날 ---------------- */
