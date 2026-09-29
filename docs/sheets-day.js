@@ -12,7 +12,7 @@ import {
   sb, D, S, WD, DAY_NOTES, PRESETS, TODAY,
   esc, josa, hm, toMin, mdLabel, wdOf, ymd, parseYmd, addDays,
   M, kids, noteOn, setIdFor, dayTasks, isRest, avatarOf,
-  liveItems, tasksOn, checkable, attDone, taskDone, progress,
+  liveItems, tasksOn, checkable, attDone, taskDone, attWait, taskWait, progress, isKid,
 } from './core.js';
 import { emOf } from './views-common.js';
 import { $, openSheet, closeSheet, toast } from './ui.js';
@@ -88,15 +88,23 @@ export function sheetDayCheck(cid, date){
   const attPt = D.family?.attend_points ?? 20;
   const allDone = p.total > 0 && p.done === p.total;
 
-  const row = (on, attrs, icon, title, sub, pt) => `
-    <div class="task ${on?'done':''}" ${attrs}>
-      <div class="box">✓</div>
-      <div class="tx"><b>${icon} ${esc(title)}</b>${sub?`<span>${esc(sub)}</span>`:''}</div>
+  const past = date !== TODAY;
+  // 아이는 이미 승인된 지난 기록을 되돌릴 수 없습니다 (권한도 서버에서 막혀 있음)
+  const row = (on, wait, attrs, icon, title, sub, pt) => {
+    const locked = isKid() && past && on;
+    return `<div class="task ${on?'done':''} ${wait?'waiting':''}" ${locked?'':attrs}>
+      <div class="box">${wait?'🕐':'✓'}</div>
+      <div class="tx"><b>${icon} ${esc(title)}</b>
+        ${wait ? '<span>엄마·아빠 확인 기다리는 중 · 누르면 취소</span>'
+               : locked ? '<span>확인받은 기록이에요</span>'
+               : (sub ? `<span>${esc(sub)}</span>` : '')}</div>
       <span class="pt">+${pt}P</span></div>`;
+  };
 
   openSheet(`${mdLabel(date)} (${WD[wdOf(date)]}) · ${c.name}`,
-    date === TODAY ? '오늘 한 것을 체크하세요.'
-                   : '지난 날짜예요. 빠뜨린 것을 지금 체크해도 그날 포인트로 들어갑니다.', `
+    !past ? '오늘 한 것을 체크하세요.'
+    : isKid() ? '지난 날짜예요. 체크하면 엄마·아빠가 확인한 뒤 완료돼요.'
+              : '지난 날짜예요. 여기서 누르면 바로 완료 처리됩니다.', `
     <div class="mrow" style="padding-top:0">
       <div class="mx"><b>완료 ${p.done} / ${p.total}</b>
         <span>${allDone ? '이 날은 다 했어요 🎉' : '누르면 체크·해제됩니다'}</span></div>
@@ -105,12 +113,12 @@ export function sheetDayCheck(cid, date){
     </div>
 
     ${acts.length ? `<h4>일정 출석</h4>${acts.map(it => row(
-        attDone(it,date),
+        attDone(it,date), attWait(it,date),
         `data-act="att" data-k="${it.kind}" data-v="${it.id}" data-d="${date}"`,
         emOf(it), it.title, `${hm(it.starts_at)}~${hm(it.ends_at)}`, attPt)).join('')}` : ''}
 
     ${ts.length ? `<h4>숙제·준비물</h4>${ts.map(t => row(
-        taskDone(t,date),
+        taskDone(t,date), taskWait(t,date),
         `data-act="task" data-v="${t.id}" data-d="${date}"`,
         t.kind === 'supply' ? '🎒' : '📝', t.title, t.note || '', t.points)).join('')}` : ''}
 
