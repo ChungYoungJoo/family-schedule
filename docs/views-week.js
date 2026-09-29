@@ -40,7 +40,12 @@ export function weekView(){
       ${kid?'':`<button class="editday" data-act="editday" data-d="${date}">✏️</button>`}</div>`;
   }).join('');
 
-  return `${whoSeg}${weekNav()}
+  return `${whoSeg}
+  <div class="seg">
+    <button class="on" data-act="calview" data-v="week">주간</button>
+    <button data-act="calview" data-v="month">월간</button>
+  </div>
+  ${weekNav()}
   <div class="sectitle" style="margin-top:0"><h3>${esc(setNameFor(weekStart()))}</h3>
     <em>${one ? '지난 날짜를 눌러 체크' : '👩👨🧑‍🏫🚶 = 하원 담당'}</em></div>
   <div class="wk">${days}</div>`;
