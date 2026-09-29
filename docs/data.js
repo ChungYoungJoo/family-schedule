@@ -2,12 +2,12 @@
 //  data.js — 서버에서 한 번에 읽어오기
 // =====================================================================
 import { sb, D, S, isKid, kids, weekDays, setIdFor, REST_KEYS,
-         TODAY, TOMORROW, ymd, parseYmd, addDays } from './core.js';
+         TODAY, TOMORROW, YESTERDAY, ymd, parseYmd, addDays } from './core.js';
 
 export async function loadAll(){
   const days = weekDays();
-  // 다른 주를 보고 있어도 "오늘/내일" 카드가 그려져야 하므로 항상 포함시킵니다
-  const from = [days[0], TODAY].sort()[0];
+  // 다른 주를 보고 있어도 "어제/오늘/내일" 카드가 그려져야 하므로 항상 포함시킵니다
+  const from = [days[0], YESTERDAY].sort()[0];
   const to   = [days[6], TOMORROW].sort().pop();
   const inWin = q => q.gte('on_date', from).lte('on_date', to);
   // 연속 달성 계산용 (최근 90일 보너스 기록)
