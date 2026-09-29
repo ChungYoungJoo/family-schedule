@@ -127,6 +127,9 @@ main{flex:1; padding:14px 16px 96px}
 .task:last-child{border-bottom:0; padding-bottom:2px}
 .box{width:24px;height:24px;flex:none;border-radius:8px;border:2px solid #e2cdb6; display:grid;place-items:center;color:#fff;font-size:13px;font-weight:900; transition:.16s; margin-top:1px}
 .task.done .box, .ev.done .box{background:var(--ok); border-color:var(--ok)}
+/* 지난 날짜를 뒤늦게 체크 — 보호자 확인 대기 */
+.task.waiting .box{background:var(--warn-soft); border-color:var(--warn); color:var(--warn); font-size:11px}
+.task.waiting .tx b{color:var(--ink-2)}
 .task .tx{flex:1}
 .task .tx b{display:block; font-size:14.5px; font-weight:700; letter-spacing:-.2px}
 .task .tx span{font-size:12px; color:var(--ink-3); font-weight:600}
@@ -141,6 +144,22 @@ main{flex:1; padding:14px 16px 96px}
 .day{background:var(--card); border-radius:14px; box-shadow:var(--shadow); padding:12px 13px; display:flex; gap:12px}
 .day.today{outline:2px solid var(--primary); outline-offset:-2px}
 .day.tapday{cursor:pointer}
+
+/* ---------- 월간 달력 ---------- */
+.mgrid{display:grid; grid-template-columns:repeat(7,1fr); gap:3px}
+.mgrid.head{margin-bottom:3px}
+.mcell{aspect-ratio:1/1; border-radius:10px; background:#faf2e9; display:flex; flex-direction:column;
+  align-items:center; justify-content:center; gap:1px; min-width:0}
+.mcell.empty{background:transparent}
+.mcell b{font-size:11.5px; font-weight:800; color:var(--ink-2); line-height:1}
+.mcell b.sat{color:#1c7ed6} .mcell b.sun{color:#e03131}
+.mcell span{font-size:13px; line-height:1}
+.mcell.tap{cursor:pointer}
+.mcell.done{background:var(--ok-soft)}
+.mcell.miss{background:var(--warn-soft)}
+.mcell.rest{background:var(--primary-soft)}
+.mcell.future{background:#fff; opacity:.5}
+.mcell.today{outline:2px solid var(--primary); outline-offset:-2px}
 .day .dcol{width:40px; flex:none; text-align:center}
 .day .dcol b{display:block; font-size:14px; font-weight:800}
 .day .dcol span{font-size:10.5px; color:var(--ink-3); font-weight:700}
