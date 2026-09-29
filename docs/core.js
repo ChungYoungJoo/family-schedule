@@ -105,6 +105,9 @@ export const D = {                 // 서버에서 읽어온 데이터
   notes:{}, cancels:new Set(), taskCancels:new Set(), extras:[], pickups:{},
   restDays:new Set(), restList:[],   // 쉬는 날 (연속 달성 계산·관리 화면용, 넓은 기간)
   weekly:{}, dayst:{}, taskLogs:new Set(), attLogs:new Set(),
+  taskWait:new Set(), attWait:new Set(),   // 지난 날짜를 뒤늦게 체크 → 보호자 승인 대기
+  waits:[],                                 // 승인 대기 목록 (보호자 화면용)
+  loadedFrom:null, loadedTo:null,           // 날짜별 기록을 읽어둔 구간
   balances:{}, weekEarned:{}, bonusDates:{},   // bonusDates[childId] = Set('YYYY-MM-DD')
   rewards:[], redemptions:[], suggests:[], notis:[],
 };
@@ -112,6 +115,8 @@ export const D = {                 // 서버에서 읽어온 데이터
 export const S = {                 // 화면 상태
   mode:'parent', tab:'today', meId:null, weekWho:'all',
   editSet:null, ovrChild:null, weekOffset:0, syncing:false,
+  cal:'week', monthOffset:0,       // 주간 탭 안의 주/월 보기
+  extraDay:null,                   // 달력에서 연 지난 날짜 (그날 기록도 함께 읽어옴)
 };
 
 export const TODAY     = ymd(new Date());
@@ -127,6 +132,29 @@ export const weekDays = () => {
   const m = parseYmd(weekStart());
   return [0,1,2,3,4,5,6].map(i => ymd(addDays(m,i)));
 };
+
+/* ---------------- 월간 달력 ---------------- */
+const monthFirst = () => {
+  const d = new Date();
+  return new Date(d.getFullYear(), d.getMonth() + S.monthOffset, 1);
+};
+export const monthLabel = () => {
+  const d = monthFirst();
+  return `${d.getFullYear()}년 ${d.getMonth()+1}월`;
+};
+export const monthRange = () => {
+  const f = monthFirst();
+  return [ymd(f), ymd(new Date(f.getFullYear(), f.getMonth()+1, 0))];
+};
+/** 일요일부터 시작하는 7칸 격자. 달에 안 드는 칸은 null */
+export function monthCells(){
+  const f = monthFirst(), y = f.getFullYear(), m = f.getMonth();
+  const last = new Date(y, m+1, 0).getDate();
+  const cells = new Array(f.getDay()).fill(null);
+  for(let d = 1; d <= last; d++) cells.push(ymd(new Date(y, m, d)));
+  while(cells.length % 7) cells.push(null);
+  return cells;
+}
 
 /* ---------------- 파생 조회 ---------------- */
 export const M       = id => D.members.find(m => m.id === id) || null;
@@ -190,7 +218,16 @@ export const suppliesOn = (cid,date) => tasksOn(cid,date).filter(t => t.kind ===
 
 export const taskDone  = (t,date)  => D.taskLogs.has(t.id+'|'+date);
 export const attDone   = (it,date) => D.attLogs.has(pkey(it,date));
+// 아이가 지난 날짜를 뒤늦게 체크해 보호자 승인을 기다리는 중
+export const taskWait  = (t,date)  => D.taskWait.has(t.id+'|'+date);
+export const attWait   = (it,date) => D.attWait.has(pkey(it,date));
 export const checkable = it => it.category !== 'school' && it.category !== 'etc';
+
+/** 그날 «승인 대기» 중인 항목 수 — 아직 완료는 아니지만 아이는 이미 눌렀습니다 */
+export function waitCount(cid, date){
+  return tasksOn(cid,date).filter(t => taskWait(t,date)).length
+       + liveItems(cid,date).filter(x => checkable(x) && attWait(x,date)).length;
+}
 
 export function progress(cid, date){
   const ts = tasksOn(cid,date), rs = liveItems(cid,date).filter(checkable);
@@ -232,7 +269,7 @@ export const pendingSuggests = () => D.suggests.filter(s => s.status === 'pendin
 
 /* ---------------- 연속 달성 ---------------- */
 // 그날 할 일이 하나라도 있었는지 (지난 날짜는 취소·추가 예외를 빼고 대략만 계산)
-function dueCount(cid, date){
+export function dueCount(cid, date){
   if(D.restDays.has(date)) return 0;   // 쉬는 날은 할 일이 없던 날로 봅니다
   const sid = setIdFor(date), wd = wdOf(date);
   const t = D.tasks.filter(x => x.set_id===sid && x.child_id===cid && !x.archived
@@ -242,7 +279,7 @@ function dueCount(cid, date){
   return t + r;
 }
 
-const gotBonus = (cid, date) => !!D.bonusDates[cid]?.has(date);
+export const gotBonus = (cid, date) => !!D.bonusDates[cid]?.has(date);
 
 /** 오늘(또는 어제)부터 거슬러 올라가며 "다 한 날"이 며칠 이어졌는지.
  *  할 일이 없던 날(주말·공휴일 등)은 끊지 않고 건너뜁니다.
