@@ -4,6 +4,7 @@
 import { sb, D, S, esc, isKid, me, setNameFor, avatarOf, TODAY } from './core.js';
 import { kidToday, shopView, parentToday } from './views-day.js';
 import { weekView, familyView } from './views-week.js';
+import { monthView } from './views-month.js';
 import { manageView } from './views-manage.js';
 
 export const $ = id => document.getElementById(id);
@@ -25,7 +26,10 @@ export function openSheet(title, hint, html){
   $('shBody').innerHTML    = html;
   $('sheetWrap').classList.add('on');
 }
-export function closeSheet(){ $('sheetWrap').classList.remove('on'); }
+export function closeSheet(){
+  $('sheetWrap').classList.remove('on');
+  S.extraDay = null;      // 달력에서 열었던 지난 날짜 조회 범위를 원래대로
+}
 export const sheetOpen = () => $('sheetWrap').classList.contains('on');
 
 /* ---------------- 헤더 ---------------- */
@@ -55,7 +59,7 @@ export function render(){
 
   const view = {
     today : isKid() ? kidToday : parentToday,
-    week  : weekView,
+    week  : S.cal === 'month' ? monthView : weekView,
     shop  : shopView,
     family: familyView,
     manage: manageView,
