@@ -28,19 +28,24 @@
 docs/                  ← 배포되는 앱
   index.html
   config.js            Supabase URL / publishable key
-  core.js              상수·유틸·전역 상태(D, S)·파생 조회      ← 의존성 최하위
+  cats.js              고양이 그림(catSvg)·도감 목록(CAT_BOOK)      ← 어디에도 의존 안 하는 잎
+  core.js              상수·유틸·전역 상태(D, S)·파생 조회      ← 의존성 최하위 (cats.js 만 가져옴)
   data.js              loadAll / resolveKid
   views-common.js      pickTag, itemChip, statusRow, slotRow, redeemRow, weekNav
-  views-day.js         kidToday / shopView / parentToday / 내일 미리보기
+  views-day.js         kidToday / parentToday / 내일 미리보기
+  views-shop.js        shopView (아이 포인트 상점)
   views-week.js        weekView / familyView
   views-month.js       monthView (월간 달력 — 주간 탭 안에서 S.cal 로 전환)
   views-manage.js      manageView
   ui.js                render / paintHeader / 바텀시트 / 토스트 / 로그인 화면
   sync.js              refresh / run(쓰기 공통) / reopenFn
   sheets.js            입력 폼 (스케줄, 숙제·준비물, 보상, 세트·기간)
-  sheets-day.js        입력 폼 (이 날만 변경, 공휴일·쉬는 날)
+  sheets-day.js        입력 폼 (이 날만 변경, 공휴일·쉬는 날, 지난 날짜 체크)
   sheets-adult.js      입력 폼 (어른 일정 — 그 날짜 / 요일별 기본)
   sheets-member.js     입력 폼 (픽업 도와줄 사람 추가·수정)
+  sheets-notice.js     알림함 (아이는 열면 자동 읽음)
+  sheets-points.js     포인트 내역·통계 시트 (한 달씩 따로 조회)
+  sheets-cats.js       고양이 도감 시트
   actions.js           ACT 테이블 + data-act 이벤트 위임
   app.js               진입점 (boot)
 supabase/
@@ -48,6 +53,8 @@ supabase/
   05_reward_suggestions.sql   아이가 갖고 싶은 보상 제안 → 부모가 포인트 정해 확정
   06_rest_days.sql            task_cancels (그날만 쉬는 숙제) + claim_daily_bonus 갱신
   07_late_checks.sql          task_logs/attendance_logs 에 pending + family_today()
+  08_notices.sql              아이 알림 읽음 + 승인/거절·보상 교환 알림 트리거
+  09_cat_book.sql             cat_collection + child_streak() + 도감 지급 트리거
 upload-to-github.ps1   배포 스크립트
 prototype.html         초기 화면 시안 (앱과 무관, 업로드 안 됨)
 ```
@@ -93,6 +100,20 @@ prototype.html         초기 화면 시안 (앱과 무관, 업로드 안 됨)
 6. **보상 제안** — 아이가 `reward_suggestions` 에 올리면 부모가 포인트를 정해
    `approve_reward_suggestion(id, cost)` RPC 로 확정 → `rewards` 행이 생김.
    `data.js` 는 이 테이블 조회 실패를 무시하므로 SQL 미실행 상태에서도 앱은 뜸
+7. **알림** — 아이는 `read_at` 컬럼만 고칠 수 있음(`08_notices.sql`). 종을 열면 자동 읽음.
+   보호자 종 아이콘에는 `audience='child'` 알림을 **섞지 않는다** (`data.js` 에서 거름) —
+   섞이면 보호자의 «모두 읽음» 이 아이 알림까지 미리 읽음 처리해 버림.
+   알림 트리거는 전부 `exception when others then null` 로 감싼다: 알림 실패가
+   체크·승인·보상 교환을 막으면 안 되기 때문. 시각은 `localMd/localHm` (created_at 은 UTC)
+8. **포인트 내역·통계** — DB 변경 없음. `sheetPoints(childId)` 가 `point_ledger` 를
+   **한 달 단위로 따로 조회**한다 (12초 폴링에 싣지 않으려고. 서버 조회 한도 1000행 대비).
+   보상 교환 행의 `on_date` 는 서버(UTC) 날짜라 `created_at` 으로 «어느 날» 인지 판단
+9. **고양이 도감** — 연속 달성 3·7·14·21·30·50·75·100일에 새 친구. 한 번 만나면 안 사라짐.
+   `cat_collection` 은 **서버 트리거만 쓴다** (보너스 적립 시 `unlock_cats`).
+   서버의 `child_streak()` 는 클라이언트 `streakOf()`(core.js) 와 **같은 규칙을 SQL 로 한 번 더
+   쓴 것**이라, 연속 달성 규칙을 바꾸면 두 곳을 같이 고쳐야 함. 일수 목록도 `cats.js` 의
+   `CAT_BOOK` 과 `09_cat_book.sql` 이 같아야 함. 도감 쪽 오류가 보너스 적립을 막지 않도록
+   트리거를 예외로 감쌌다
 
 ## 권한
 
