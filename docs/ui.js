@@ -2,7 +2,8 @@
 //  ui.js — 화면 그리기 / 바텀시트 / 토스트 / 로그인·오류 화면
 // =====================================================================
 import { sb, D, S, esc, isKid, me, setNameFor, avatarOf, TODAY } from './core.js';
-import { kidToday, shopView, parentToday } from './views-day.js';
+import { kidToday, parentToday } from './views-day.js';
+import { shopView } from './views-shop.js';
 import { weekView, familyView } from './views-week.js';
 import { monthView } from './views-month.js';
 import { manageView } from './views-manage.js';
