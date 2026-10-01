@@ -1,7 +1,8 @@
 // =====================================================================
 //  core.js — 상수 / 유틸 / 전역 상태 / 파생 조회
-//  (다른 모듈에 의존하지 않는 가장 아래층)
+//  (가장 아래층. 의존하는 것은 순수한 잎 모듈인 cats.js 뿐입니다)
 // =====================================================================
+import { KID_CATS, catSvg } from './cats.js';
 
 /* ---------------- 상수 ---------------- */
 export const WD = ['일','월','화','수','목','금','토'];
@@ -56,18 +57,20 @@ export const esc      = s => String(s??'').replace(/[&<>"]/g, c => ({'&':'&amp;'
 //   그러니 `${name}${josa(name,…)}` 처럼 쓰면 이름이 두 번 나옵니다.
 export const josa     = (w,a,b) => w + (((w.charCodeAt(w.length-1)-0xAC00)%28) ? a : b);
 
+/* ---------------- 시각 (브라우저 지역 시간) ----------------
+ *  서버가 돌려주는 created_at 은 UTC 라서 slice 로 자르면 한국 시간보다 9시간 늦게 보입니다. */
+const lp = n => String(n).padStart(2,'0');
+export const localMd = iso => { const d = new Date(iso); return `${d.getMonth()+1}/${d.getDate()}`; };
+export const localHm = iso => { const d = new Date(iso); return `${lp(d.getHours())}:${lp(d.getMinutes())}`; };
+
 /* ---------------- 고양이 아바타 ----------------
  *  이모지로는 «치즈냥 / 회색냥» 을 구분할 수 없어서 작은 그림을 직접 그립니다.
  *  members.emoji 에 'cat:cheese' 또는 'cat:grey' 를 넣으면 이 그림이 나옵니다.
- *  그림은 1em 크기라서 이모지가 있던 자리에 그대로 들어갑니다.            */
-const CAT_STYLES = {
-  cheese:{fur:'#f0a441', dark:'#cf7a22', face:'#fff1db', ear:'#f3b3a4'},  // 치즈냥
-  grey:  {fur:'#a7b3bd', dark:'#84919d', face:'#ffffff', ear:'#eeb9b0'},  // 회색·흰색냥
-};
+ *  그림 자체는 cats.js 에 있고, 여기서는 «어느 구성원이 어느 털색인지» 만 고릅니다. */
 const catKey = m => {
   const e = String(m?.emoji || '');
   const k = e.startsWith('cat:') ? e.slice(4) : '';
-  return CAT_STYLES[k] ? k : null;
+  return KID_CATS[k] ? k : null;
 };
 
 /** 글자만 넣을 수 있는 자리(시트 제목 등)에서 쓸 대체 이모지 */
@@ -76,23 +79,7 @@ export const emojiOf = m => catKey(m) ? '🐱' : (m?.emoji || '');
 /** HTML 자리용 — 고양이면 그림, 아니면 원래 이모지 그대로 */
 export function avatarOf(m){
   const k = catKey(m);
-  if(!k) return m?.emoji || '';
-  const s = CAT_STYLES[k];
-  return `<svg class="catav" viewBox="0 0 32 32" aria-hidden="true">`
-    + `<path d="M6.5 13 8 4l7 5.2z" fill="${s.fur}"/>`
-    + `<path d="M25.5 13 24 4l-7 5.2z" fill="${s.fur}"/>`
-    + `<path d="M9 11.6 9.9 6.8l3.5 2.6z" fill="${s.ear}"/>`
-    + `<path d="M23 11.6 22.1 6.8l-3.5 2.6z" fill="${s.ear}"/>`
-    + `<ellipse cx="16" cy="18.4" rx="11" ry="9.4" fill="${s.fur}"/>`
-    + `<path d="M16 9.4v4.4M11.4 10.8l1.5 3.6M20.6 10.8l-1.5 3.6" stroke="${s.dark}"`
-    + ` stroke-width="1.7" stroke-linecap="round" fill="none"/>`
-    + `<ellipse cx="16" cy="21.8" rx="7.1" ry="5.1" fill="${s.face}"/>`
-    + `<ellipse cx="11.9" cy="17.4" rx="1.7" ry="2.2" fill="#3b2f28"/>`
-    + `<ellipse cx="20.1" cy="17.4" rx="1.7" ry="2.2" fill="#3b2f28"/>`
-    + `<path d="M16 20.4l-1.5 1.2h3z" fill="#e2857e"/>`
-    + `<path d="M16 21.8v1.1M16 22.9c-1.2 0-1.9-.7-1.9-1.5M16 22.9c1.2 0 1.9-.7 1.9-1.5"`
-    + ` stroke="#3b2f28" stroke-width="1" stroke-linecap="round" fill="none"/>`
-    + `</svg>`;
+  return k ? catSvg(KID_CATS[k]) : (m?.emoji || '');
 }
 
 /* ---------------- Supabase 클라이언트 ---------------- */
@@ -110,6 +97,7 @@ export const D = {                 // 서버에서 읽어온 데이터
   loadedFrom:null, loadedTo:null,           // 날짜별 기록을 읽어둔 구간
   balances:{}, weekEarned:{}, bonusDates:{},   // bonusDates[childId] = Set('YYYY-MM-DD')
   rewards:[], redemptions:[], suggests:[], notis:[],
+  cats:[],                                  // 고양이 도감 {child_id, milestone, unlocked_on}
 };
 
 export const S = {                 // 화면 상태
@@ -248,6 +236,9 @@ export function statusOf(mid, date){
 // 요일 기본 일정이 하나라도 등록된 사람인지.
 // 가끔 픽업만 도와주는 사람은 «어른들 일정» 줄에 넣지 않습니다.
 export const hasWeekly = mid => Object.keys(D.weekly).some(k => k.startsWith(mid + '|'));
+
+/** 이 아이가 이미 만난 고양이 친구들 (연속 달성 일수의 Set) */
+export const unlockedCats    = cid => new Set(D.cats.filter(x => x.child_id === cid).map(x => x.milestone));
 
 export const noteOn          = date => D.notes[date] || null;
 // 학교·학원·숙제를 통째로 쉬는 날 (공휴일, 아파서 쉬는 날)
