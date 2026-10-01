@@ -45,16 +45,19 @@ export async function loadAll(){
     sb.from('notifications').select('*').order('created_at', {ascending:false}).limit(40),
     sb.from('point_ledger').select('child_id,delta,on_date,ref_type').gte('on_date', ledgerFrom),
     sb.from('date_notes').select('on_date,note_key,emoji,label').gte('on_date', ledgerFrom).lte('on_date', restTo),
-    // ↓ 아래 둘은 선택 테이블입니다 (05·06 SQL 미실행 상태에서도 앱은 떠야 하므로 따로 처리)
+    // ↓ 아래 셋은 선택 테이블입니다 (05·06·09 SQL 미실행 상태에서도 앱은 떠야 하므로 따로 처리)
     sb.from('reward_suggestions').select('*').order('created_at', {ascending:false}).limit(40),
     inWin(sb.from('task_cancels').select('*')),
+    sb.from('cat_collection').select('child_id,milestone,unlocked_on'),
   ]);
 
-  // 붙인 역순으로 꺼냅니다 (task_cancels → reward_suggestions → date_notes 넓은 범위)
+  // 붙인 역순으로 꺼냅니다 (cat_collection → task_cancels → reward_suggestions → date_notes 넓은 범위)
+  const cats  = res.pop();
   const tcan  = res.pop();
   const sug   = res.pop();
   const rest  = res.pop();
 
+  D.cats        = cats.error ? [] : (cats.data || []);
   D.taskCancels = new Set(tcan.error ? [] : (tcan.data||[]).map(c => c.task_id+'|'+c.on_date));
   D.suggests    = sug.error ? [] : (sug.data || []);
 
@@ -77,7 +80,9 @@ export async function loadAll(){
   D.extras      = extras || [];
   D.rewards     = rew || [];
   D.redemptions = red || [];
-  D.notis       = noti || [];
+  // 보호자 종 아이콘에는 «아이에게 가는 알림» 이 섞이면 안 됩니다.
+  // (섞이면 보호자가 «모두 읽음» 을 눌렀을 때 아이가 보기도 전에 읽음 처리됩니다)
+  D.notis       = (noti || []).filter(n => isKid() || n.audience !== 'child');
 
   D.notes = {};
   (notes||[]).forEach(n => D.notes[n.on_date] = n);
