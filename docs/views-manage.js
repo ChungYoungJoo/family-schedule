@@ -4,7 +4,9 @@
 import {
   D, S, WD, CAT, TODAY, esc, hm, toMin, mdLabel,
   M, A, kids, setNameFor, pendingRedeems, pendingSuggests, restGroups, restRange, isRest, avatarOf,
+  unlockedCats,
 } from './core.js';
+import { CAT_BOOK } from './cats.js';
 import { redeemRow, suggestRow } from './views-common.js';
 
 /* 이번 주에 걸려 있는 "이 날만 변경" 목록
@@ -169,6 +171,16 @@ export function manageView(){
       아이가 «포인트 상점» 에서 갖고 싶은 것을 올리면 여기에 쌓입니다.
       포인트를 정해 확정하면 아래 보상 목록에 바로 추가됩니다.
     </div>
+  </div>
+
+  <div class="sectitle"><h3>포인트 내역 · 고양이 도감</h3><em>아이별로 보기</em></div>
+  <div class="card">
+    ${kids().map(c => `<div class="mrow">
+      <div class="ic" style="background:${c.color}22">${avatarOf(c)}</div>
+      <div class="mx"><b>${esc(c.name)}</b>
+        <span>⭐ ${D.balances[c.id] ?? 0}P · 이번 주 +${D.weekEarned[c.id] ?? 0}P · 도감 ${unlockedCats(c.id).size}/${CAT_BOOK.length}</span></div>
+      <button class="undo" data-act="ptlog" data-v="${c.id}">📜 내역</button>
+      <button class="undo" data-act="catbook" data-v="${c.id}">😻 도감</button></div>`).join('')}
   </div>
 
   <div class="sectitle"><h3>보상 목록</h3><em>${D.rewards.length}개</em></div>
