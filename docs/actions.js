@@ -13,6 +13,9 @@ import { sheetRoutine, saveRoutine, sheetTask, saveTask,
 import { sheetStatus, saveSitter, sheetWeekly, saveWeeklyAll } from './sheets-adult.js';
 import { sheetMember, saveMember } from './sheets-member.js';
 import { sheetEditDay, sheetDayCheck, sheetRest, saveRest, removeRest } from './sheets-day.js';
+import { sheetNotis, readAllNotis } from './sheets-notice.js';
+import { sheetPoints } from './sheets-points.js';
+import { sheetCats } from './sheets-cats.js';
 
 /* 하루 전부 완료 보너스 — 서버가 실제 완료 여부를 다시 검증합니다 */
 async function maybeBonus(childId, date){
@@ -228,20 +231,13 @@ export const ACT = {
   },
 
   /* ---- 알림 ---- */
-  notis: () => openSheet('알림', '',
-    (D.notis.length ? D.notis.map(n => `
-      <div class="noti ${n.read_at?'':'unread'}"><div class="ic">${n.icon}</div>
-        <div class="nx"><b>${esc(n.title)}</b>${n.body?`<span>${esc(n.body)}</span>`:''}
-          <em>${n.created_at.slice(5,16).replace('T',' ')}</em></div></div>`).join('')
-      : '<div class="note" style="padding:10px">알림이 없습니다</div>')
-    + (isKid() ? '' : `<button class="ghost" data-act="readall">모두 읽음으로 표시</button>`)),
+  notis:   () => sheetNotis(),
+  readall: () => readAllNotis(),
 
-  readall: () => run(async () => {
-    const ids = D.notis.filter(n => !n.read_at).map(n => n.id);
-    closeSheet(); setReopen(null);
-    if(!ids.length) return;
-    return sb.from('notifications').update({ read_at:new Date().toISOString() }).in('id', ids);
-  }),
+  /* ---- 포인트 내역 · 고양이 도감 (아이·보호자 공통) ---- */
+  ptlog:   ({v})   => sheetPoints(v),
+  ptmo:    ({v,w}) => sheetPoints(w, v),
+  catbook: ({v})   => sheetCats(v),
 
   /* ---- 보호자 시점 전환 ---- */
   who: () => openSheet('보기 전환', '다른 보호자 시점으로 화면을 볼 수 있어요.',
