@@ -7,6 +7,8 @@ import { shopView } from './views-shop.js';
 import { weekView, familyView } from './views-week.js';
 import { monthView } from './views-month.js';
 import { manageView } from './views-manage.js';
+import { chatView, chatLive, paintChat, chatOpened } from './views-chat.js';
+import { C, unreadTotal } from './chat.js';
 
 export const $ = id => document.getElementById(id);
 
@@ -53,9 +55,15 @@ export function paintHeader(){
 
 /* ---------------- 전체 렌더 ---------------- */
 export function render(){
+  // 대화 탭이 이미 그려져 있으면 화면을 통째로 다시 만들지 않습니다.
+  // 12초 폴링마다 입력창이 새로 만들어져 쓰던 글이 지워지기 때문입니다.
+  if(S.tab === 'chat' && chatLive()){ paintHeader(); paintChat(); return; }
+
+  // 10_chat.sql 을 실행하지 않은 서버(C.ok === false)에서는 대화 탭을 숨깁니다
+  const chatTab = C.ok === false ? [] : [['chat','💬','대화']];
   const tabs = isKid()
-    ? [['today','🐱','오늘'],['week','🗓','내 주간'],['shop','🐾','포인트 상점']]
-    : [['today','🏠','오늘'],['week','🗓','주간'],['family','🤝','가족일정'],['manage','⚙️','관리']];
+    ? [['today','🐱','오늘'],['week','🗓','내 주간'],...chatTab,['shop','🐾','포인트 상점']]
+    : [['today','🏠','오늘'],['week','🗓','주간'],['family','🤝','가족일정'],...chatTab,['manage','⚙️','관리']];
   if(!tabs.some(t => t[0] === S.tab)) S.tab = 'today';
 
   const view = {
@@ -63,18 +71,23 @@ export function render(){
     week  : S.cal === 'month' ? monthView : weekView,
     shop  : shopView,
     family: familyView,
+    chat  : chatView,
     manage: manageView,
   }[S.tab];
+
+  const unread = unreadTotal();
+  const badge = k => (k === 'chat' && unread) ? `<em class="nb">${unread > 9 ? '9+' : unread}</em>` : '';
 
   $('root').innerHTML = `
     <div class="app">
       <header id="hdr"></header>
       <main id="main">${view()}</main>
       <nav>${tabs.map(([k,i,l]) =>
-        `<button class="${S.tab===k?'on':''}" data-act="tab" data-v="${k}"><span class="i">${i}</span>${l}</button>`
+        `<button class="${S.tab===k?'on':''}" data-act="tab" data-v="${k}"><span class="i">${i}</span>${l}${badge(k)}</button>`
       ).join('')}</nav>
     </div>`;
   paintHeader();
+  if(S.tab === 'chat') chatOpened();
 }
 
 /* ---------------- 로그인 / 오류 화면 ---------------- */
