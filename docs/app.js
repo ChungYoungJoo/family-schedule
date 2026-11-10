@@ -20,6 +20,8 @@ import { loadAll, resolveKid } from './data.js';
 import { render, screenLogin, screenError } from './ui.js';
 import { refresh } from './sync.js';
 import { bindEvents } from './actions.js';
+import { bindChat } from './chat-events.js';
+import { chatTick } from './views-chat.js';
 
 async function boot(){
   const hash = new URLSearchParams(location.hash.slice(1));
@@ -76,12 +78,15 @@ async function boot(){
 /* 12초마다, 그리고 화면으로 돌아올 때마다 다시 읽습니다 */
 function startSync(){
   setInterval(() => { if(document.visibilityState === 'visible') refresh(true); }, 12000);
+  // 대화 탭이 열려 있을 때만 4초마다 새 메시지를 가져옵니다 (chatTick 이 스스로 거름)
+  setInterval(chatTick, 4000);
   document.addEventListener('visibilitychange', () => {
     if(document.visibilityState === 'visible') refresh(true);
   });
 }
 
 bindEvents();
+bindChat();
 boot().catch(e => {
   console.error(e);
   screenError('시작할 수 없어요', e.message || String(e));
