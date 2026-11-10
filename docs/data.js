@@ -3,6 +3,7 @@
 // =====================================================================
 import { sb, D, S, isKid, kids, weekDays, setIdFor, REST_KEYS,
          TODAY, TOMORROW, YESTERDAY, ymd, parseYmd, addDays } from './core.js';
+import { refreshUnread } from './chat.js';
 
 export async function loadAll(){
   const days = weekDays();
@@ -136,6 +137,10 @@ export async function loadAll(){
           || D.members.find(m => m.kind === 'parent')?.id
           || null;
   }
+
+  // 대화 안 읽은 개수 — S.meId 가 정해진 뒤에 읽어야 합니다.
+  // (10_chat.sql 이 없으면 조용히 건너뛰고, 던지지 않으므로 앱은 그대로 뜹니다)
+  await refreshUnread();
 }
 
 /* 아이 모드에서 "나"를 확정 */
