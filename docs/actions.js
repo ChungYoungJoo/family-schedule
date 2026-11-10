@@ -16,6 +16,7 @@ import { sheetEditDay, sheetDayCheck, sheetRest, saveRest, removeRest } from './
 import { sheetNotis, readAllNotis } from './sheets-notice.js';
 import { sheetPoints } from './sheets-points.js';
 import { sheetCats } from './sheets-cats.js';
+import { C } from './chat.js';
 
 /* 하루 전부 완료 보너스 — 서버가 실제 완료 여부를 다시 검증합니다 */
 async function maybeBonus(childId, date){
@@ -32,6 +33,7 @@ export const ACT = {
   weekwho: ({v}) => { S.weekWho = v; render(); },
   wkoff:   ({v}) => { S.weekOffset = v === '0' ? 0 : S.weekOffset + Number(v); refresh(); },
   calview: ({v}) => { S.cal = v; render(); },
+  chatkid: ({v}) => { C.kid = v; render(); },      // 보호자: 대화방(아이) 바꾸기
   mooff:   ({v}) => { S.monthOffset = v === '0' ? 0 : S.monthOffset + Number(v); render(); },
   editset: ({v}) => { S.editSet = v; render(); },
   logout:  async () => { await sb.auth.signOut(); localStorage.removeItem('kidToken'); location.reload(); },
