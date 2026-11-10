@@ -333,6 +333,47 @@ nav button{flex:1; border:0; background:transparent; cursor:pointer; font-family
 nav button .i{font-size:19px; line-height:1}
 nav button.on{color:var(--primary)}
 
+/* ---------- 대화 ---------- */
+nav button{position:relative}
+.nb{position:absolute; top:0; left:calc(50% + 7px); min-width:16px; height:16px; padding:0 4px; border-radius:99px;
+  background:var(--danger); color:#fff; font-size:9.5px; font-style:normal; font-weight:800; line-height:1;
+  display:grid; place-items:center; border:2px solid #fff; box-sizing:content-box}
+/* 짧은 대화에서도 입력창이 화면 아래에 오도록 세로로 채움 (헤더·탭바 높이를 뺀 값) */
+.chatwrap{display:flex; flex-direction:column; min-height:calc(100dvh - 152px); margin-bottom:-28px}
+.chathead b{display:block; font-size:15px; letter-spacing:-.3px}
+.chathead span{display:block; font-size:11.5px; color:var(--ink-3); font-weight:600; margin:2px 0 10px; line-height:1.5}
+.cdot{font-style:normal; margin-left:5px; background:var(--danger); color:#fff; font-size:10px; font-weight:800;
+  border-radius:99px; padding:1px 6px; vertical-align:1px}
+.chat{flex:1; display:flex; flex-direction:column; gap:3px; padding:2px 0 10px}
+.cday{align-self:center; margin:12px 0 6px; padding:3px 11px; border-radius:99px; background:rgba(0,0,0,.05);
+  color:var(--ink-3); font-size:11px; font-weight:800}
+.cmsg{display:flex; gap:7px; max-width:88%; align-items:flex-end; margin-top:7px}
+.cmsg.cont{margin-top:0}
+.cmsg.mine{align-self:flex-end; flex-direction:row-reverse}
+.cav{width:30px; height:30px; flex:none; border-radius:50%; display:grid; place-items:center; font-size:17px}
+.cav.sp{visibility:hidden}
+.cbody{min-width:0}
+.cname{font-size:11px; font-weight:800; color:var(--ink-2); margin:0 0 3px 3px}
+.crow{display:flex; align-items:flex-end; gap:5px}
+.cmsg.mine .crow{flex-direction:row-reverse}
+.cbub{padding:8px 12px; border-radius:16px 16px 16px 5px; background:var(--card); box-shadow:var(--shadow);
+  font-size:14.5px; line-height:1.45; word-break:break-word; white-space:pre-wrap; min-width:0}
+.cmsg.mine .cbub{background:var(--primary); color:#fff; border-radius:16px 16px 5px 16px}
+.ctime{font-size:10px; color:var(--ink-3); font-weight:700; white-space:nowrap; flex:none}
+.cempty{margin:auto; text-align:center; color:var(--ink-3); font-size:13px; font-weight:700; line-height:1.8; padding:30px 10px}
+.cempty small{font-weight:600; font-size:11px}
+/* 입력줄: 긴 대화를 위로 올려 읽어도 탭바 바로 위에 붙어 있게 */
+.cbar{position:sticky; bottom:calc(64px + env(safe-area-inset-bottom)); z-index:5; margin:0 -16px; padding:10px 16px 8px;
+  background:linear-gradient(to top, var(--bg) 70%, transparent)}
+.cform{display:flex; gap:8px}
+.cform input{flex:1; min-width:0; padding:12px 14px; border:1.5px solid var(--line); border-radius:99px;
+  font-family:inherit; font-size:15px; background:#fff; color:var(--ink)}
+.cform input:focus{outline:none; border-color:var(--primary)}
+.csend{flex:none; padding:0 16px; border:0; border-radius:99px; background:var(--primary); color:#fff;
+  font-family:inherit; font-size:14px; font-weight:800; cursor:pointer}
+.csend:disabled{opacity:.5}
+.cerr{font-size:12px; color:var(--danger); font-weight:700; margin:0 0 6px 4px}
+
 .toast{position:fixed; bottom:86px; left:50%; transform:translate(-50%,10px); background:#1e2233; color:#fff; padding:10px 16px; border-radius:99px; font-size:13px; font-weight:700; opacity:0; pointer-events:none; transition:.2s; z-index:70; max-width:90%; text-align:center}
 .toast.on{opacity:1; transform:translate(-50%,0)}
 .toast.bad{background:var(--danger)}
